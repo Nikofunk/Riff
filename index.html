@@ -550,7 +550,7 @@ render();
  const zoomOut=ui.querySelector('.zoomOut'),xOut=ui.querySelector('.xOut'),yOut=ui.querySelector('.yOut');
  function apply(){
    const z=Number(zoom.value),px=Number(x.value),py=Number(y.value);
-   video.style.transform='translate('+px+'%, '+py+'%) scale('+z+')';
+   video.style.setProperty('transform','translate('+px+'%, '+py+'%) scale('+z+')','important');
    zoomOut.textContent=z.toFixed(2)+'×';xOut.textContent=px;yOut.textContent=py;
  }
  [zoom,x,y].forEach(el=>el.addEventListener('input',apply));
