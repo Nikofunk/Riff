@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 
 test('RIFF loads and shows the welcome screen', async ({ page }) => {
   const pageErrors = [];
-  page.on('pageerror', error => pageErrors.push(error.message));
+  page.on('pageerror', error => pageErrors.push(error.stack || error.message));
 
   const response = await page.goto('/');
   expect(response && response.ok()).toBeTruthy();
