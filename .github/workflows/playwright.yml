@@ -20,6 +20,11 @@ jobs:
           node-version: 20
       - name: Install dependencies
         run: npm install
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-chromium-v1
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
       - name: Run browser tests
@@ -47,6 +52,11 @@ jobs:
           node-version: 20
       - name: Install dependencies
         run: npm install
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-chromium-v1
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
       - name: Wait for Netlify deployment
