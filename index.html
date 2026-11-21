@@ -409,8 +409,9 @@ render();
  if(!preview||!zone||!panel)return;
  const header=document.createElement('div');header.className='channelHeader';header.innerHTML='<div class="channelLogo"><span>+</span></div><div class="channelText"><strong class="channelNamePreview">Nombre del canal</strong><span class="channelCaptionPreview"></span></div>';
  preview.insertBefore(header,zone);
- const controls=document.createElement('section');controls.className='maskControls';controls.innerHTML='<h3>Identidad del canal</h3><div class="logoRow"><span>Logo / foto</span><label class="logoUploadLabel">Subir imagen<input type="file" accept="image/*" class="logoPicker" hidden></label></div><input type="text" class="channelNameInput" placeholder="Nombre del canal o persona"><input type="text" class="headerTextInput" placeholder="Texto que aparecerá junto al nombre"><hr><h3>Máscara de video</h3><div class="maskControlRow"><span>Posición</span><input type="range" class="maskTop" min="8" max="78" value="24"><span class="topVal">24%</span></div><div class="maskControlRow"><span>Altura</span><input type="range" class="maskHeight" min="12" max="65" value="38"><span class="heightVal">38%</span></div><button type="button" class="resetMask">Restablecer</button>';
+ const controls=document.createElement('section');controls.className='maskControls';controls.innerHTML='<h3>Identidad del canal</h3><div class="logoRow"><span>Logo / foto</span><label class="logoUploadLabel">Subir imagen<input type="file" accept="image/*" class="logoPicker" hidden></label></div><input type="text" class="channelNameInput" placeholder="Nombre del canal o persona"><input type="text" class="headerTextInput" placeholder="Texto que aparecerá junto al nombre"><hr><h3>Máscara de video</h3><div class="maskControlRow"><span>Posición</span><input type="range" class="maskTop" min="8" max="78" value="24"><span class="topVal">24%</span></div><div class="maskControlRow"><span>Altura</span><input type="range" class="maskHeight" min="12" max="65" value="38"><span class="heightVal">38%</span></div><div class="maskControlRow videoFitRow"><span>Encuadre</span><select class="videoFitMode" aria-label="Encuadre del video"><option value="cover">Rellenar</option><option value="contain">Ajustar</option></select></div><button type="button" class="resetMask">Restablecer</button>';
  panel.appendChild(controls);
+ const fitMode=controls.querySelector('.videoFitMode');zone.classList.add('fitCover');fitMode.addEventListener('change',()=>{zone.classList.toggle('fitCover',fitMode.value==='cover');zone.classList.toggle('fitContain',fitMode.value==='contain');});
  const logo=header.querySelector('.channelLogo'),namePreview=header.querySelector('.channelNamePreview'),captionPreview=header.querySelector('.channelCaptionPreview');
  controls.querySelector('.logoPicker').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const url=URL.createObjectURL(f);logo.innerHTML='<img alt="Logo del canal">';logo.querySelector('img').src=url;});
  controls.querySelector('.channelNameInput').addEventListener('input',e=>{namePreview.textContent=e.target.value||'Nombre del canal';});
@@ -719,3 +720,10 @@ render();
  document.addEventListener('riff-gp-demo-selected',()=>{if(demo)demo.classList.remove('gpDemoTab');if(overlay)overlay.classList.remove('active');});
 })();
 </script>
+
+<style id="riff-verified-fit-toggle">
+#workspace .maskControls .videoFitRow{grid-template-columns:75px 1fr;}
+#workspace .maskControls .videoFitMode{width:100%;background:#0b0e12;color:#e7edf0;border:1px solid #343c44;border-radius:5px;padding:6px 8px;font-size:11px;}
+#workspace .videoDropZone.fitCover video{object-fit:cover!important;object-position:center center!important;}
+#workspace .videoDropZone.fitContain video{object-fit:contain!important;object-position:center center!important;}
+</style>
