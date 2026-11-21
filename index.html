@@ -418,7 +418,7 @@ render();
  controls.querySelector('.headerTextInput').addEventListener('input',e=>{captionPreview.textContent=e.target.value?' · '+e.target.value:'';});
  const top=controls.querySelector('.maskTop'),height=controls.querySelector('.maskHeight');
  function updateMask(){zone.style.setProperty('top',top.value+'%','important');zone.style.setProperty('height',height.value+'%','important');controls.querySelector('.topVal').textContent=top.value+'%';controls.querySelector('.heightVal').textContent=height.value+'%';}
- top.addEventListener('input',updateMask);height.addEventListener('input',updateMask);controls.querySelector('.resetMask').addEventListener('click',()=>{top.value=24;height.value=38;updateMask();});updateMask();
+ top.addEventListener('input',updateMask);height.addEventListener('input',updateMask);controls.querySelector('.resetMask').addEventListener('click',()=>{top.value=0;height.value=100;updateMask();});updateMask();
 })();
 </script>
 
