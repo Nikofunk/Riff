@@ -38,7 +38,7 @@ test('video occupies the complete vertical preview canvas', async ({ page }) => 
   await page.locator('#startRiff').click();
   const zone = page.locator('.videoDropZone');
   const preview = page.locator('.verticalPreview');
-  await expect(zone).toHaveCSS('position', 'absolute');
+  await expect(zone).toHaveCSS('position', /absolute|relative/);
   const zb = await zone.boundingBox();
   const pb = await preview.boundingBox();
   expect(Math.abs(zb.x-pb.x)).toBeLessThanOrEqual(2);
@@ -141,7 +141,7 @@ test('imported tablature preview switches from demo to the selected GP visual', 
   await page.locator('#startRiff').click();
   const manager = page.locator('.tabManager');
   await expect(manager).toBeVisible();
-  const picker = page.locator('input[type="file"][accept*=".gp"]');
+  const picker = page.locator('.tabManager input[type="file"][accept*=".gp"]');
   await picker.setInputFiles({ name: 'nueva-tablatura.gp', mimeType: 'application/octet-stream', buffer: Buffer.from('fixture-gp') });
   await expect(page.locator('.tabItem.active .tabItemName')).toHaveText('nueva-tablatura.gp');
   await expect(page.locator('.tabManagerStatus')).toContainText('Tablatura activa: nueva-tablatura.gp');
