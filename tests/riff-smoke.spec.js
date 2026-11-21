@@ -53,6 +53,6 @@ test('timeline is moved outside the main editor layout without DOM errors', asyn
   await page.locator('#startRiff').click();
   const timeline = page.locator('#timeline');
   await expect(timeline).toBeVisible();
-  expect(await timeline.evaluate(el => el.parentElement.classList.contains('layout'))).toBeTruthy();
+  expect(await timeline.evaluate(el => el.previousElementSibling?.classList.contains('layout'))).toBeTruthy();
   expect(pageErrors).toEqual([]);
 });
