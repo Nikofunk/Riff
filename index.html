@@ -184,7 +184,7 @@ body{padding:0;background:#09090b}
 (()=>{const layout=document.querySelector('#workspace .layout');const stage=layout?.querySelector('.stage');if(!layout||!stage)return;
 const asideRight=document.createElement('aside');asideRight.className='rightPanel';asideRight.innerHTML='<h3>Propiedades</h3><div class="propertyRow">Formato de proyecto<strong>Video vertical · 9:16</strong></div><div class="propertyRow">Elemento seleccionado<strong>Tablatura</strong></div><div class="propertyRow">Audio<strong>Guitar Pro · MIDI</strong></div><div class="propertyRow">Composición<strong>En desarrollo</strong></div><div class="propertyRow">Video de fondo<strong>Pendiente de importar</strong></div>';layout.appendChild(asideRight);
 const preview=document.createElement('div');preview.className='verticalPreview';['.song','.title','.artist','#tab'].forEach(sel=>{const el=stage.querySelector(sel);if(el)preview.appendChild(el)});stage.insertBefore(preview,stage.firstChild);
-const timeline=stage.querySelector('#timeline');if(timeline){timeline.parentElement.insertBefore(timeline,layout.nextSibling);timeline.classList.add('timelineEditor');timeline.insertAdjacentHTML('beforebegin','<div class="timelineLabel">LÍNEA DE TIEMPO · EVENTOS MUSICALES</div>')}
+const timeline=stage.querySelector('#timeline');if(timeline){layout.parentElement.insertBefore(timeline,layout.nextSibling);timeline.classList.add('timelineEditor');timeline.insertAdjacentHTML('beforebegin','<div class="timelineLabel">LÍNEA DE TIEMPO · EVENTOS MUSICALES</div>')}
 })();
 </script>
 <script>
