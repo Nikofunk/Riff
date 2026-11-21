@@ -31,20 +31,21 @@ test('main editor controls are present and usable', async ({ page }) => {
   await expect(page.locator('#timeline')).toBeVisible();
 });
 
-test('video framing control switches between fill and fit', async ({ page }) => {
+test('video occupies the complete vertical preview canvas', async ({ page }) => {
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.stack || error.message));
   await page.goto('/');
   await page.locator('#startRiff').click();
   const zone = page.locator('.videoDropZone');
-  const selector = page.locator('.videoFitMode');
-  await expect(zone).toHaveClass(/fitCover/);
-  await selector.selectOption('contain');
-  await expect(zone).toHaveClass(/fitContain/);
-  await expect(page.locator('.videoDropZone video')).toHaveCSS('object-fit', 'contain');
-  await selector.selectOption('cover');
-  await expect(zone).toHaveClass(/fitCover/);
-  await expect(page.locator('.videoDropZone video')).toHaveCSS('object-fit', 'cover');
+  const preview = page.locator('.verticalPreview');
+  await expect(zone).toHaveCSS('position', 'absolute');
+  const zb = await zone.boundingBox();
+  const pb = await preview.boundingBox();
+  expect(zb.x).toBeCloseTo(pb.x, 0);
+  expect(zb.y).toBeCloseTo(pb.y, 0);
+  expect(zb.width).toBeCloseTo(pb.width, 0);
+  expect(zb.height).toBeCloseTo(pb.height, 0);
+  await expect(page.locator('.videoFramingControls')).toBeVisible();
   expect(pageErrors).toEqual([]);
 });
 
