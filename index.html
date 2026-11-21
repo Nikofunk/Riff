@@ -517,6 +517,62 @@ render();
 #workspace .videoFrameControls .videoFitLabel{display:flex;align-items:center;gap:5px;color:#9aa8b0;font-size:10px;white-space:nowrap;}
 #workspace .videoFrameControls .videoFitSelect{background:#0b0e12;color:#e7edf0;border:1px solid #343c44;border-radius:5px;padding:5px 7px;font-size:10px;}
 </style>
+
+<style id="riff-manual-video-framing">
+#workspace .videoFrameControls{display:none!important;}
+#workspace .videoDropZone.hasVideo{cursor:grab!important;touch-action:none!important;}
+#workspace .videoDropZone.hasVideo.isPanning{cursor:grabbing!important;}
+#workspace .videoDropZone video{transform-origin:center center!important;will-change:transform;}
+#workspace .videoFramingControls{margin-top:12px;padding:10px;background:#11161a;border:1px solid #27343b;border-radius:10px;}
+#workspace .videoFramingControls h3{font-size:12px;margin:0 0 9px;color:#e7edf0;}
+#workspace .videoFramingControls .frameControl{display:grid;grid-template-columns:68px 1fr 38px;gap:7px;align-items:center;margin:7px 0;font-size:10px;color:#9eabb3;}
+#workspace .videoFramingControls input[type=range]{width:100%;accent-color:#08b9e5;}
+#workspace .videoFramingControls output{font-size:10px;text-align:right;color:#d9e5eb;}
+#workspace .videoFramingControls button{width:100%;margin-top:6px;background:#202831;border:1px solid #35414a;border-radius:6px;padding:7px;color:#d8e2e7;font-size:10px;}
+#workspace .videoFramingControls .frameHelp{font-size:10px;color:#7f8c94;line-height:1.4;margin:7px 0 0;}
+</style>
+<script id="riff-manual-video-framing-js">
+(()=> {
+ const zone=document.querySelector('#workspace .videoDropZone');
+ const video=zone?.querySelector('video');
+ const panel=document.querySelector('#workspace .maskControls');
+ if(!zone||!video||!panel||panel.querySelector('.videoFramingControls'))return;
+ const ui=document.createElement('section');
+ ui.className='videoFramingControls';
+ ui.innerHTML='<h3>Encuadre del video</h3>'+
+ '<label class="frameControl"><span>Zoom</span><input class="frameZoom" type="range" min="1" max="3" step="0.01" value="1"><output class="zoomOut">1.00×</output></label>'+
+ '<label class="frameControl"><span>Horizontal</span><input class="frameX" type="range" min="-100" max="100" step="1" value="0"><output class="xOut">0</output></label>'+
+ '<label class="frameControl"><span>Vertical</span><input class="frameY" type="range" min="-100" max="100" step="1" value="0"><output class="yOut">0</output></label>'+
+ '<button type="button" class="resetVideoFrame">Restablecer encuadre</button>'+
+ '<p class="frameHelp">Arrastra el video dentro del marco para moverlo. Usa Zoom para acercar o alejar.</p>';
+ panel.appendChild(ui);
+ const zoom=ui.querySelector('.frameZoom'),x=ui.querySelector('.frameX'),y=ui.querySelector('.frameY');
+ const zoomOut=ui.querySelector('.zoomOut'),xOut=ui.querySelector('.xOut'),yOut=ui.querySelector('.yOut');
+ function apply(){
+   const z=Number(zoom.value),px=Number(x.value),py=Number(y.value);
+   video.style.transform='translate('+px+'%, '+py+'%) scale('+z+')';
+   zoomOut.textContent=z.toFixed(2)+'×';xOut.textContent=px;yOut.textContent=py;
+ }
+ [zoom,x,y].forEach(el=>el.addEventListener('input',apply));
+ ui.querySelector('.resetVideoFrame').addEventListener('click',()=>{zoom.value='1';x.value='0';y.value='0';apply();});
+ let dragging=false,startX=0,startY=0,baseX=0,baseY=0;
+ zone.addEventListener('pointerdown',e=>{
+   if(!zone.classList.contains('hasVideo')||e.target.closest('button, input, select, label'))return;
+   dragging=true;startX=e.clientX;startY=e.clientY;baseX=Number(x.value);baseY=Number(y.value);
+   zone.classList.add('isPanning');zone.setPointerCapture?.(e.pointerId);e.preventDefault();
+ });
+ zone.addEventListener('pointermove',e=>{
+   if(!dragging)return;
+   const r=zone.getBoundingClientRect();
+   x.value=String(Math.max(-100,Math.min(100,baseX+(e.clientX-startX)/r.width*100)));
+   y.value=String(Math.max(-100,Math.min(100,baseY+(e.clientY-startY)/r.height*100)));
+   apply();
+ });
+ const endDrag=()=>{dragging=false;zone.classList.remove('isPanning');};
+ zone.addEventListener('pointerup',endDrag);zone.addEventListener('pointercancel',endDrag);
+ apply();
+})();
+</script>
 </body></html>
 <style>
 /* RIFF v39: gestor de tablaturas en panel lateral */
