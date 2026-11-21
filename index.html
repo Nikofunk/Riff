@@ -229,7 +229,8 @@ const timeline=stage.querySelector('#timeline');if(timeline){timeline.parentElem
 // RIFF v36: máscara cover, desplazamiento vertical y texto superpuesto.
 (()=>{
  const zone=document.querySelector('#workspace .videoDropZone');const video=zone?.querySelector('video');if(!zone||!video)return;
- const controls=document.createElement('div');controls.className='videoFrameControls';controls.innerHTML='<span class="videoTitleLabel">VIDEO</span><strong class="videoTitle">Sin video</strong><input type="text" class="videoCaptionInput" placeholder="Escribe un texto para mostrar sobre el video…" aria-label="Texto sobre el video">';zone.parentElement.insertBefore(controls,zone);
+ const controls=document.createElement('div');controls.className='videoFrameControls';controls.innerHTML='<span class="videoTitleLabel">VIDEO</span><strong class="videoTitle">Sin video</strong><label class="videoFitLabel">ENCUADRE<select class="videoFitSelect" aria-label="Encuadre del video"><option value="cover">Rellenar</option><option value="contain">Ajustar</option></select></label><input type="text" class="videoCaptionInput" placeholder="Escribe un texto para mostrar sobre el video…" aria-label="Texto sobre el video">';zone.parentElement.insertBefore(controls,zone);
+ const fitSelect=controls.querySelector('.videoFitSelect');fitSelect.addEventListener('change',()=>{video.style.objectFit=fitSelect.value;video.style.objectPosition='center center';});video.style.objectFit='cover';
  const caption=document.createElement('div');caption.className='videoCaptionOverlay';zone.appendChild(caption);
  const hint=document.createElement('div');hint.className='videoHint';hint.textContent='ARRASTRA ↑↓ PARA REENCUADRAR';zone.appendChild(hint);
  let dy=0,drag=null;const title=controls.querySelector('.videoTitle'),textInput=controls.querySelector('.videoCaptionInput');
@@ -511,6 +512,10 @@ render();
  const wait=()=>{if(window.alphaTab)init();else setTimeout(wait,150);};wait();
 })();
 </script>
+<style id="riff-video-fit-control">
+#workspace .videoFrameControls .videoFitLabel{display:flex;align-items:center;gap:5px;color:#9aa8b0;font-size:10px;white-space:nowrap;}
+#workspace .videoFrameControls .videoFitSelect{background:#0b0e12;color:#e7edf0;border:1px solid #343c44;border-radius:5px;padding:5px 7px;font-size:10px;}
+</style>
 </body></html>
 <style>
 /* RIFF v39: gestor de tablaturas en panel lateral */
