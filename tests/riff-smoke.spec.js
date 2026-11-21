@@ -41,8 +41,10 @@ test('video framing control switches between fill and fit', async ({ page }) => 
   await expect(zone).toHaveClass(/fitCover/);
   await selector.selectOption('contain');
   await expect(zone).toHaveClass(/fitContain/);
+  await expect(page.locator('.videoDropZone video')).toHaveCSS('object-fit', 'contain');
   await selector.selectOption('cover');
   await expect(zone).toHaveClass(/fitCover/);
+  await expect(page.locator('.videoDropZone video')).toHaveCSS('object-fit', 'cover');
   expect(pageErrors).toEqual([]);
 });
 
@@ -78,5 +80,31 @@ test('video upload populates preview, media bin and timeline', async ({ page }) 
   await expect(page.locator('.videoImportedItem .videoName')).toHaveText('riff-test-video.mp4');
   await expect(page.locator('#timeline .videoClip')).toContainText('riff-test-video.mp4');
   expect(await video.evaluate(el => el.src.startsWith('blob:'))).toBeTruthy();
+  expect(pageErrors).toEqual([]);
+});
+
+
+test('drag and drop imports a video and replacing it updates the existing media and timeline clip', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.stack || error.message));
+  await page.goto('/');
+  await page.locator('#startRiff').click();
+  const zone = page.locator('.videoDropZone');
+  await zone.dispatchEvent('dragover', { dataTransfer: await page.evaluateHandle(() => new DataTransfer()) });
+  const dropped = await page.evaluate(() => {
+    const transfer = new DataTransfer();
+    transfer.items.add(new File(['video-fixture'], 'primera-toma.webm', { type: 'video/webm' }));
+    return transfer;
+  });
+  await zone.dispatchEvent('drop', { dataTransfer: dropped });
+  await expect(zone).toHaveClass(/hasVideo/);
+  await expect(page.locator('.videoImportedItem .videoName')).toHaveText('primera-toma.webm');
+  await expect(page.locator('#timeline .videoClip')).toContainText('primera-toma.webm');
+  const picker = page.locator('#videoFilePicker');
+  await picker.setInputFiles({ name: 'segunda-toma.webm', mimeType: 'video/webm', buffer: Buffer.from('fixture-two') });
+  await expect(page.locator('.videoImportedItem .videoName')).toHaveText('segunda-toma.webm');
+  await expect(page.locator('#timeline .videoClip')).toContainText('segunda-toma.webm');
+  await expect(page.locator('.videoImportedItem')).toHaveCount(1);
+  await expect(page.locator('#timeline .videoClip')).toHaveCount(1);
   expect(pageErrors).toEqual([]);
 });
