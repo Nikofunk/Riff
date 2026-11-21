@@ -545,7 +545,7 @@ render();
  '<label class="frameControl"><span>Vertical</span><input class="frameY" type="range" min="-100" max="100" step="1" value="0"><output class="yOut">0</output></label>'+
  '<button type="button" class="resetVideoFrame">Restablecer encuadre</button>'+
  '<p class="frameHelp">Arrastra el video dentro del marco para moverlo. Usa Zoom para acercar o alejar.</p>';
- panel.appendChild(ui);
+ panel.insertBefore(ui,panel.firstChild);
  const zoom=ui.querySelector('.frameZoom'),x=ui.querySelector('.frameX'),y=ui.querySelector('.frameY');
  const zoomOut=ui.querySelector('.zoomOut'),xOut=ui.querySelector('.xOut'),yOut=ui.querySelector('.yOut');
  function apply(){
@@ -782,4 +782,18 @@ render();
 #workspace .maskControls .videoFitMode{width:100%;background:#0b0e12;color:#e7edf0;border:1px solid #343c44;border-radius:5px;padding:6px 8px;font-size:11px;}
 #workspace .videoDropZone.fitCover video{object-fit:cover!important;object-position:center center!important;}
 #workspace .videoDropZone.fitContain video{object-fit:contain!important;object-position:center center!important;}
+</style>
+
+<style id="riff-full-canvas-video">
+/* Video is the full vertical canvas background; overlays sit above it. */
+#workspace .verticalPreview{position:relative!important;isolation:isolate!important;overflow:hidden!important;padding:0!important;}
+#workspace .videoDropZone{position:absolute!important;inset:0!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:100%!important;height:100%!important;min-height:0!important;flex:none!important;margin:0!important;border:0!important;border-radius:0!important;background:#050608!important;z-index:0!important;}
+#workspace .videoDropZone video{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;object-position:center!important;}
+#workspace .videoDropZone .videoPrompt{z-index:1;}
+#workspace .channelHeader{position:relative!important;z-index:3!important;margin:12px 12px 0!important;background:rgba(5,8,10,.68)!important;border-radius:8px!important;padding:8px!important;}
+#workspace .verticalPreview .tab{position:relative!important;z-index:3!important;margin:auto 10px 12px!important;background:rgba(5,7,9,.82)!important;box-shadow:0 3px 18px rgba(0,0,0,.35)!important;}
+#workspace .videoFramingControls{margin-top:0!important;order:-1!important;}
+#workspace .rightPanel .maskControls{gap:5px!important;}
+#workspace .maskControls .maskControlRow:has(.maskTop),#workspace .maskControls .maskControlRow:has(.maskHeight),#workspace .maskControls .videoFitRow{display:none!important;}
+@media(max-width:760px){#workspace .verticalPreview{max-height:none!important;}}
 </style>
