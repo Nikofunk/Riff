@@ -805,3 +805,9 @@ render();
 #workspace .videoDropZone .riffVideoPlayButton.playing{opacity:.25!important;}
 #workspace .videoDropZone:hover .riffVideoPlayButton.playing,#workspace .videoDropZone .riffVideoPlayButton:focus{opacity:1!important;}
 </style>
+
+<style id="riff-video-play-layer-fix">
+#workspace .verticalPreview .videoDropZone{position:relative!important;z-index:8!important;isolation:isolate!important;}
+#workspace .verticalPreview .videoDropZone .riffVideoPlayButton{z-index:9999!important;}
+#workspace .verticalPreview .tab{position:relative!important;z-index:2!important;}
+</style>
