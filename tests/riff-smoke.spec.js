@@ -107,3 +107,27 @@ test('drag and drop imports a video and replacing it updates the existing media 
   await expect(page.locator('#timeline .videoClip')).toHaveCount(1);
   expect(pageErrors).toEqual([]);
 });
+
+test('manual video framing controls zoom and reposition the video', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.stack || error.message));
+  await page.goto('/');
+  await page.locator('#startRiff').click();
+  const picker = page.locator('#videoFilePicker');
+  await picker.setInputFiles({name:'framing-test.mp4',mimeType:'video/mp4',buffer:Buffer.from('fixture-video')});
+  const zoom = page.locator('.frameZoom');
+  const horizontal = page.locator('.frameX');
+  const vertical = page.locator('.frameY');
+  await expect(zoom).toBeVisible();
+  await zoom.fill('1.75');
+  await horizontal.fill('30');
+  await vertical.fill('-20');
+  const video = page.locator('.videoDropZone video');
+  await expect(video).toHaveCSS('transform', /matrix/);
+  const transform = await video.evaluate(el=>el.style.transform);
+  expect(transform).toContain('scale(1.75)');
+  expect(transform).toContain('translate(30%, -20%)');
+  await page.locator('.resetVideoFrame').click();
+  expect(await video.evaluate(el=>el.style.transform)).toContain('translate(0%, 0%) scale(1)');
+  expect(pageErrors).toEqual([]);
+});
