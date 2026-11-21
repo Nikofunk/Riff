@@ -417,7 +417,7 @@ render();
  controls.querySelector('.channelNameInput').addEventListener('input',e=>{namePreview.textContent=e.target.value||'Nombre del canal';});
  controls.querySelector('.headerTextInput').addEventListener('input',e=>{captionPreview.textContent=e.target.value?' · '+e.target.value:'';});
  const top=controls.querySelector('.maskTop'),height=controls.querySelector('.maskHeight');
- function updateMask(){zone.style.setProperty('top',top.value+'%','important');zone.style.setProperty('height',height.value+'%','important');controls.querySelector('.topVal').textContent=top.value+'%';controls.querySelector('.heightVal').textContent=height.value+'%';}
+ function updateMask(){zone.style.setProperty('top','0%','important');zone.style.setProperty('height','100%','important');zone.style.setProperty('left','0%','important');zone.style.setProperty('right','0%','important');controls.querySelector('.topVal').textContent='0%';controls.querySelector('.heightVal').textContent='100%';}
  top.addEventListener('input',updateMask);height.addEventListener('input',updateMask);controls.querySelector('.resetMask').addEventListener('click',()=>{top.value=0;height.value=100;updateMask();});updateMask();
 })();
 </script>
