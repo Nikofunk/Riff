@@ -57,3 +57,26 @@ test('timeline is moved outside the main editor layout without DOM errors', asyn
   await expect(timeline).toHaveClass(/timelineEditor/);
   expect(pageErrors).toEqual([]);
 });
+
+
+test('video upload populates preview, media bin and timeline', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.stack || error.message));
+  await page.goto('/');
+  await page.locator('#startRiff').click();
+  const picker = page.locator('#videoFilePicker');
+  await picker.setInputFiles({
+    name: 'riff-test-video.mp4',
+    mimeType: 'video/mp4',
+    buffer: Buffer.from('RIFF-test-video-fixture')
+  });
+  const video = page.locator('.videoDropZone video');
+  await expect(video).toBeAttached();
+  await expect(video).toHaveAttribute('controls', '');
+  await expect(page.locator('.videoDropZone')).toHaveClass(/hasVideo/);
+  await expect(page.locator('#selectedFile')).toContainText('riff-test-video.mp4');
+  await expect(page.locator('.videoImportedItem .videoName')).toHaveText('riff-test-video.mp4');
+  await expect(page.locator('#timeline .videoClip')).toContainText('riff-test-video.mp4');
+  expect(await video.evaluate(el => el.src.startsWith('blob:'))).toBeTruthy();
+  expect(pageErrors).toEqual([]);
+});
