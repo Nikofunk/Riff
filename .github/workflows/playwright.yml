@@ -33,3 +33,44 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  live-browser-tests:
+    needs: browser-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Wait for Netlify deployment
+        run: |
+          for attempt in $(seq 1 24); do
+            if curl -fsS https://riffmusicians.netlify.app/ -o /tmp/riff-live.html && grep -q 'RIFF' /tmp/riff-live.html; then
+              echo "Netlify site responds with RIFF content."
+              exit 0
+            fi
+            echo "Waiting for Netlify deploy... attempt $attempt"
+            sleep 10
+          done
+          echo "Netlify site did not become ready in time."
+          exit 1
+      - name: Run browser tests against production
+        env:
+          RIFF_URL: https://riffmusicians.netlify.app
+        run: npm test
+      - name: Upload live test report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: riff-live-playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
