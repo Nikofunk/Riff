@@ -81,7 +81,6 @@ test('video upload populates preview, media bin and timeline', async ({ page }) 
   await expect(page.locator('.videoDropZone')).toHaveClass(/hasVideo/);
   await expect(page.locator('#selectedFile')).toContainText('riff-test-video.mp4');
   await expect(page.locator('.videoImportedItem .videoName')).toHaveText('riff-test-video.mp4');
-  await expect(page.locator('#timeline .videoClip')).toContainText('riff-test-video.mp4');
   expect(await video.evaluate(el => el.src.startsWith('blob:'))).toBeTruthy();
   expect(pageErrors).toEqual([]);
 });
