@@ -201,6 +201,7 @@ const timeline=stage.querySelector('#timeline');if(timeline){layout.parentElemen
  const video=document.createElement('video');video.controls=true;video.playsInline=true;video.preload='metadata';zone.appendChild(video);
  const prompt=zone.querySelector('.videoPrompt');if(prompt){const btn=document.createElement('button');btn.className='videoImportBtn';btn.type='button';btn.textContent='Seleccionar video';prompt.appendChild(btn);btn.addEventListener('click',ev=>{ev.stopPropagation();picker.click();});}
  zone.addEventListener('click',ev=>{if(ev.target!==video&&!ev.target.closest('button'))picker.click();});
+ const videoPlayButton=document.createElement('button');videoPlayButton.type='button';videoPlayButton.className='riffVideoPlayButton';videoPlayButton.setAttribute('aria-label','Reproducir video');videoPlayButton.textContent='▶';zone.appendChild(videoPlayButton);videoPlayButton.addEventListener('click',ev=>{ev.stopPropagation();if(video.paused){video.play().catch(()=>{});}else video.pause();});video.addEventListener('play',()=>{videoPlayButton.textContent='Ⅱ';videoPlayButton.setAttribute('aria-label','Pausar video');videoPlayButton.classList.add('playing');});video.addEventListener('pause',()=>{videoPlayButton.textContent='▶';videoPlayButton.setAttribute('aria-label','Reproducir video');videoPlayButton.classList.remove('playing');});video.addEventListener('ended',()=>{videoPlayButton.textContent='▶';videoPlayButton.classList.remove('playing');});
  function loadVideo(file){if(!file||!file.type.startsWith('video/'))return;const old=video.dataset.url;if(old)URL.revokeObjectURL(old);const url=URL.createObjectURL(file);video.dataset.url=url;video.src=url;zone.classList.add('hasVideo');video.load();
   const name=file.name;document.dispatchEvent(new CustomEvent('riff-video-loaded',{detail:{name}}));const label=document.querySelector('#selectedFile');if(label)label.textContent='Video: '+name;
   const media=document.querySelector('.mediaPanel');if(media){let item=media.querySelector('.videoImportedItem');if(!item){item=document.createElement('div');item.className='mediaItem videoImportedItem active';item.innerHTML='<span class="mediaIcon">▣</span><div><strong class="videoName"></strong><small>Video importado · Preview</small></div>';media.insertBefore(item,media.querySelector('.hiddenAudit'));}item.querySelector('.videoName').textContent=name;}
@@ -796,4 +797,11 @@ render();
 #workspace .rightPanel .maskControls{gap:5px!important;}
 #workspace .maskControls .maskControlRow:has(.maskTop),#workspace .maskControls .maskControlRow:has(.maskHeight),#workspace .maskControls .videoFitRow{display:none!important;}
 @media(max-width:760px){#workspace .verticalPreview{max-height:none!important;}}
+</style>
+
+<style id="riff-visible-video-play-control">
+#workspace .videoDropZone .riffVideoPlayButton{position:absolute!important;z-index:20!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;width:58px!important;height:58px!important;border-radius:50%!important;border:1px solid #ffffff70!important;background:#08b9e5!important;color:#071014!important;display:grid!important;place-items:center!important;font-size:22px!important;font-weight:900!important;box-shadow:0 4px 22px #0009!important;opacity:.96!important;pointer-events:auto!important;}
+#workspace .videoDropZone.hasVideo .riffVideoPlayButton{display:grid!important;}
+#workspace .videoDropZone .riffVideoPlayButton.playing{opacity:.25!important;}
+#workspace .videoDropZone:hover .riffVideoPlayButton.playing,#workspace .videoDropZone .riffVideoPlayButton:focus{opacity:1!important;}
 </style>
