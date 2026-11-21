@@ -30,3 +30,29 @@ test('main editor controls are present and usable', async ({ page }) => {
   await expect(page.locator('#reset')).toBeVisible();
   await expect(page.locator('#timeline')).toBeVisible();
 });
+
+test('video framing control switches between fill and fit', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.stack || error.message));
+  await page.goto('/');
+  await page.locator('#startRiff').click();
+  const zone = page.locator('.videoDropZone');
+  const selector = page.locator('.videoFitMode');
+  await expect(zone).toHaveClass(/fitCover/);
+  await selector.selectOption('contain');
+  await expect(zone).toHaveClass(/fitContain/);
+  await selector.selectOption('cover');
+  await expect(zone).toHaveClass(/fitCover/);
+  expect(pageErrors).toEqual([]);
+});
+
+test('timeline is moved outside the main editor layout without DOM errors', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.stack || error.message));
+  await page.goto('/');
+  await page.locator('#startRiff').click();
+  const timeline = page.locator('#timeline');
+  await expect(timeline).toBeVisible();
+  expect(await timeline.evaluate(el => el.parentElement.classList.contains('layout'))).toBeTruthy();
+  expect(pageErrors).toEqual([]);
+});
