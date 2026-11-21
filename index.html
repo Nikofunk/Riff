@@ -594,19 +594,38 @@ render();
 #workspace .tabManagerStatus{font-size:10px;color:#8d9aa2;margin-top:7px;min-height:14px}
 </style>
 <script>
-// RIFF v39: sustituye información de propiedades por un gestor funcional de tablaturas.
+// RIFF v48: import manager with validation, deferred engine loading, and demo restoration.
 (()=>{
- const panel=document.querySelector('#workspace .rightPanel'); if(!panel)return;
+ const panel=document.querySelector('#workspace .rightPanel');if(!panel)return;
  const manager=document.createElement('section');manager.className='tabManager';
- manager.innerHTML='<h3>Tablaturas del proyecto</h3><p class="tabManagerHint">Agrega archivos Guitar Pro y selecciona cuál queda activa para el motor de reproducción.</p><div class="tabList"></div><button class="addTabButton" type="button">＋ Agregar tablatura</button><div class="tabManagerStatus">Demo cargada · puedes agregar archivos GP</div>';
+ manager.innerHTML='<h3>Tablaturas del proyecto</h3><p class="tabManagerHint">Agrega archivos Guitar Pro y selecciona cuál queda activa para reproducción y visualización.</p><div class="tabList"></div><button class="addTabButton" type="button">＋ Agregar tablatura</button><div class="tabManagerStatus">Demo cargada · puedes agregar archivos GP</div>';
  panel.insertBefore(manager,panel.firstChild);
  const list=manager.querySelector('.tabList'),status=manager.querySelector('.tabManagerStatus'),add=manager.querySelector('.addTabButton');
- const picker=document.createElement('input');picker.type='file';picker.accept='.gp,.gp3,.gp4,.gp5,.gpx,.gp7,.gp8,.guitarpro';picker.hidden=true;picker.multiple=false;document.body.appendChild(picker);
- let items=[{name:'Shape of You · Demo',kind:'demo',active:true}];let active=0;
- function draw(){list.innerHTML='';items.forEach((item,i)=>{const b=document.createElement('button');b.type='button';b.className='tabItem'+(i===active?' active':'');b.innerHTML='<span class="tabItemIcon">♫</span><span class="tabItemName"></span><small></small>';b.querySelector('.tabItemName').textContent=item.name;b.querySelector('small').textContent=i===active?'ACTIVA':'GP';b.addEventListener('click',()=>selectItem(i));list.appendChild(b);});}
- async function selectItem(i){active=i;draw();const item=items[i];if(item.kind==='demo'){status.textContent='Demo activa. Se conserva la tablatura de demostración.';document.dispatchEvent(new CustomEvent('riff-gp-demo-selected'));return;}try{status.textContent='Cargando tablatura…';const bytes=new Uint8Array(await item.file.arrayBuffer());if(typeof alphaApi!=='undefined'&&alphaApi){alphaApi.load(bytes);document.dispatchEvent(new CustomEvent('riff-gp-preview-load',{detail:{bytes}}));status.textContent='Tablatura activa: '+item.name+' · cargada en AlphaTab';}else{status.textContent='Archivo agregado. El motor aún está inicializándose.';}const label=document.querySelector('#selectedFile');if(label)label.textContent='Tablatura activa: '+item.name;const timeline=document.querySelector('#timeline');if(timeline){let clip=timeline.querySelector('.gpTabClip');if(!clip){clip=document.createElement('div');clip.className='videoClip gpTabClip';timeline.appendChild(clip);}clip.textContent='♫ '+item.name;} }catch(err){status.textContent='No se pudo cargar el archivo: '+err.message;}}
- add.addEventListener('click',()=>picker.click());picker.addEventListener('change',()=>{const f=picker.files&&picker.files[0];if(!f)return;items.push({name:f.name,file:f,kind:'file'});active=items.length-1;draw();selectItem(active);picker.value='';});
- draw();
+ const picker=document.createElement('input');picker.type='file';picker.accept='.gp,.gp3,.gp4,.gp5,.gpx,.gp7,.gp8,.guitarpro';picker.hidden=true;document.body.appendChild(picker);
+ let items=[{name:'Shape of You · Demo',kind:'demo'}],active=0,pendingIndex=null;
+ function validName(name){const n=name.toLowerCase();return ['.gp','.gp3','.gp4','.gp5','.gpx','.gp7','.gp8','.guitarpro'].some(ext=>n.endsWith(ext));}
+ function draw(){list.innerHTML='';items.forEach((item,i)=>{const b=document.createElement('button');b.type='button';b.className='tabItem'+(i===active?' active':'');b.innerHTML='<span class="tabItemIcon">♫</span><span class="tabItemName"></span><small></small>';b.querySelector('.tabItemName').textContent=item.name;b.querySelector('small').textContent=i===active?'ACTIVA':item.kind==='demo'?'DEMO':'GP';b.addEventListener('click',()=>selectItem(i));list.appendChild(b);});}
+ function decodeDemo(){const raw=atob(sampleBase64),bytes=new Uint8Array(raw.length);for(let j=0;j<raw.length;j++)bytes[j]=raw.charCodeAt(j);return bytes;}
+ function label(name){const el=document.querySelector('#selectedFile');if(el)el.textContent=name?'Tablatura activa: '+name:'Proyecto de demostración';}
+ function removeClip(){document.querySelector('#timeline .gpTabClip')?.remove();}
+ function loadBytes(bytes,name,isDemo){if(!alphaApi){pendingIndex=active;status.textContent='Archivo listo. Esperando a que AlphaTab termine de inicializarse…';return;}
+  try{alphaApi.load(bytes);if(isDemo){document.dispatchEvent(new CustomEvent('riff-gp-demo-selected'));removeClip();label('');status.textContent='Demo activa.';}
+  else{document.dispatchEvent(new CustomEvent('riff-gp-preview-load',{detail:{bytes,name}}));label(name);status.textContent='Tablatura activa: '+name+' · renderizando preview…';const timeline=document.querySelector('#timeline');if(timeline){let clip=timeline.querySelector('.gpTabClip');if(!clip){clip=document.createElement('div');clip.className='videoClip gpTabClip';timeline.appendChild(clip);}clip.textContent='♫ '+name;}}
+  }catch(err){status.textContent='No se pudo cargar '+name+': '+(err.message||err);console.error('RIFF import',err);}
+ }
+ async function selectItem(i){if(i<0||i>=items.length)return;active=i;draw();const item=items[i];if(item.kind==='demo'){loadBytes(decodeDemo(),item.name,true);return;}
+  try{status.textContent='Leyendo archivo…';const bytes=new Uint8Array(await item.file.arrayBuffer());if(!bytes.length)throw new Error('El archivo está vacío.');if(active!==i)return;loadBytes(bytes,item.name,false);}
+  catch(err){status.textContent='No se pudo leer el archivo: '+(err.message||err);console.error(err);}
+ }
+ add.addEventListener('click',()=>picker.click());
+ picker.addEventListener('change',()=>{const f=picker.files&&picker.files[0];if(!f)return;if(!validName(f.name)){status.textContent='Formato no compatible. Selecciona un archivo Guitar Pro.';picker.value='';return;}if(!f.size){status.textContent='El archivo está vacío.';picker.value='';return;}
+  const existing=items.findIndex(x=>x.kind==='file'&&x.name===f.name&&x.file.size===f.size&&x.file.lastModified===f.lastModified);
+  if(existing>=0){selectItem(existing);}else{items.push({name:f.name,file:f,kind:'file'});active=items.length-1;draw();selectItem(active);}picker.value='';
+ });
+ document.addEventListener('riff-alpha-ready',()=>{if(pendingIndex!==null){const i=pendingIndex;pendingIndex=null;selectItem(i);}});
+ document.addEventListener('riff-gp-preview-rendered',()=>{if(items[active]?.kind==='file')status.textContent='Tablatura importada visible en el preview.';});
+ document.addEventListener('riff-gp-preview-error',ev=>{if(items[active]?.kind==='file')status.textContent='No se pudo renderizar la tablatura: '+(ev.detail?.message||'error de AlphaTab');});
+ draw();if(alphaApi)selectItem(0);
 })();
 </script>
 
@@ -810,4 +829,9 @@ render();
 #workspace .verticalPreview .videoDropZone{position:relative!important;z-index:8!important;isolation:isolate!important;}
 #workspace .verticalPreview .videoDropZone .riffVideoPlayButton{z-index:9999!important;}
 #workspace .verticalPreview .tab{position:relative!important;z-index:2!important;}
+</style>
+
+<style id="riff-v48-overlay-render-state">
+#workspace .alphaTabOverlay.rendering{display:block!important;opacity:0!important;pointer-events:none!important;}
+#workspace .alphaTabOverlay.active{display:block!important;opacity:1!important;}
 </style>
