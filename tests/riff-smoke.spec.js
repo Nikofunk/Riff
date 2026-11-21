@@ -90,13 +90,12 @@ test('drag and drop imports a video and replacing it updates the existing media 
   await page.goto('/');
   await page.locator('#startRiff').click();
   const zone = page.locator('.videoDropZone');
-  await zone.dispatchEvent('dragover', { dataTransfer: await page.evaluateHandle(() => new DataTransfer()) });
-  const dropped = await page.evaluate(() => {
+  await zone.evaluate(el => {
     const transfer = new DataTransfer();
     transfer.items.add(new File(['video-fixture'], 'primera-toma.webm', { type: 'video/webm' }));
-    return transfer;
+    el.dispatchEvent(new DragEvent('dragover', { bubbles: true, dataTransfer: transfer }));
+    el.dispatchEvent(new DragEvent('drop', { bubbles: true, dataTransfer: transfer }));
   });
-  await zone.dispatchEvent('drop', { dataTransfer: dropped });
   await expect(zone).toHaveClass(/hasVideo/);
   await expect(page.locator('.videoImportedItem .videoName')).toHaveText('primera-toma.webm');
   await expect(page.locator('#timeline .videoClip')).toContainText('primera-toma.webm');
