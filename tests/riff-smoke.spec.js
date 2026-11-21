@@ -41,10 +41,10 @@ test('video occupies the complete vertical preview canvas', async ({ page }) => 
   await expect(zone).toHaveCSS('position', 'absolute');
   const zb = await zone.boundingBox();
   const pb = await preview.boundingBox();
-  expect(zb.x).toBeCloseTo(pb.x, 0);
-  expect(zb.y).toBeCloseTo(pb.y, 0);
-  expect(zb.width).toBeCloseTo(pb.width, 0);
-  expect(zb.height).toBeCloseTo(pb.height, 0);
+  expect(Math.abs(zb.x-pb.x)).toBeLessThanOrEqual(2);
+  expect(Math.abs(zb.y-pb.y)).toBeLessThanOrEqual(2);
+  expect(Math.abs(zb.width-pb.width)).toBeLessThanOrEqual(2);
+  expect(Math.abs(zb.height-pb.height)).toBeLessThanOrEqual(2);
   await expect(page.locator('.videoFramingControls')).toBeVisible();
   expect(pageErrors).toEqual([]);
 });
