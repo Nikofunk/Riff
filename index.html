@@ -366,7 +366,7 @@ alphaApi.playerStateChanged?.on(()=>{playing=String(alphaApi.playerState).toLowe
 alphaApi.playerPositionChanged?.on(()=>updatePlayerPosition());
 alphaApi.playedBeatChanged?.on(()=>updatePlayerPosition());
 alphaApi.playerFinished?.on(()=>{playing=false;playBtn.textContent='▶ Reproducir audio';setFromTick(0);});
-const raw=atob(sampleBase64),bytes=new Uint8Array(raw.length);for(let j=0;j<raw.length;j++)bytes[j]=raw.charCodeAt(j);alphaApi.load(bytes);setStatus('Archivo Guitar Pro cargado. Generando MIDI…');
+const raw=atob(sampleBase64),bytes=new Uint8Array(raw.length);for(let j=0;j<raw.length;j++)bytes[j]=raw.charCodeAt(j);alphaApi.load(bytes);setStatus('Archivo Guitar Pro cargado. Generando MIDI…');document.dispatchEvent(new CustomEvent('riff-alpha-ready'));
 }catch(e){setStatus('No se pudo inicializar el reproductor: '+e.message,'error');console.error(e);}}
 playBtn.onclick=()=>{if(!alphaApi||!alphaApi.isReadyForPlayback)return;if(playing)alphaApi.pause();else alphaApi.play();};
 document.getElementById('reset').onclick=()=>{if(alphaApi)alphaApi.stop();playing=false;setFromTick(0);clockEl.textContent='00:00';progressFill.style.width='0%';};
@@ -480,7 +480,7 @@ render();
  padding:7px 5px!important; background:rgba(12,13,15,.9)!important;
  border:1px solid rgba(210,220,225,.4)!important; border-radius:9px!important; backdrop-filter:blur(3px)!important;
 }
-#workspace .alphaTabOverlay.active{display:block!important;}
+#workspace .alphaTabOverlay.rendering{display:block!important;opacity:0!important;pointer-events:none!important;}\n#workspace .alphaTabOverlay.active{display:block!important;opacity:1!important;}
 #workspace .alphaTabOverlay svg{display:block!important;width:100%!important;height:auto!important;}
 #workspace .alphaTabOverlay .at-page{max-width:100%!important;margin:0 auto!important;}
 @media(max-width:760px){#workspace .verticalPreview{width:min(320px,100%,calc(65vh * 9 / 16))!important;}}
@@ -499,14 +499,14 @@ render();
   if(api||!window.alphaTab)return api;
   try{
    api=new window.alphaTab.AlphaTabApi(overlay,{display:{staveProfile:window.alphaTab.StaveProfile.Tab,scale:75},player:{enablePlayer:false,enableCursor:false,enableElementHighlighting:false}});
-   api.renderFinished?.on(()=>{overlay.classList.add('active');if(demo)demo.classList.add('gpDemoTab');renderPending=false;});
-   api.error?.on(err=>{console.error('RIFF GP preview error',err);renderPending=false;overlay.classList.remove('active');if(demo)demo.classList.remove('gpDemoTab');});
+   api.renderFinished?.on(()=>{overlay.classList.remove('rendering');overlay.classList.remove('rendering');overlay.classList.add('active');if(demo)demo.classList.add('gpDemoTab');renderPending=false;document.dispatchEvent(new CustomEvent('riff-gp-preview-rendered'));});
+   api.error?.on(err=>{console.error('RIFF GP preview error',err);renderPending=false;overlay.classList.remove('active','rendering');if(demo)demo.classList.remove('gpDemoTab');document.dispatchEvent(new CustomEvent('riff-gp-preview-error',{detail:{message:err?.message||String(err)}}));});
   }catch(err){console.error('RIFF preview API init failed',err);api=null;}
   return api;
  }
  function load(bytes){
   const a=init();if(!a||!bytes)return;
-  try{overlay.innerHTML='';overlay.classList.remove('active');renderPending=true;a.load(bytes);}
+  try{overlay.innerHTML='';overlay.classList.remove('active');overlay.classList.add('rendering');renderPending=true;a.load(bytes);}
   catch(err){console.error('RIFF preview GP load failed',err);renderPending=false;if(demo)demo.classList.remove('gpDemoTab');}
  }
  document.addEventListener('riff-gp-preview-load',ev=>{if(ev.detail&&ev.detail.bytes)load(ev.detail.bytes);});
@@ -770,11 +770,11 @@ render();
    if(overlay){overlay.innerHTML='';overlay.classList.remove('active');}
    if(managerStatus)managerStatus.textContent='Renderizando tablatura importada…';
    let tries=0;
-   const poll=()=>{if(showImported()||tries++>80){if(!showImported()&&managerStatus)managerStatus.textContent='El archivo se cargó para audio, pero AlphaTab no generó tablatura visual. Revisa el formato del archivo.';return;}setTimeout(poll,150);};
+   const poll=()=>{if(showImported()||tries++>80){if(!showImported()){overlay?.classList.remove('rendering');if(managerStatus)managerStatus.textContent='El archivo se cargó para audio, pero AlphaTab no generó tablatura visual. Revisa el formato del archivo.';document.dispatchEvent(new CustomEvent('riff-gp-preview-error',{detail:{message:'No se generó la tablatura visual.'}}));}return;}setTimeout(poll,150);};
    setTimeout(poll,150);
  });
  // Re-select demo returns the original visual demo and hides imported overlay.
- document.addEventListener('riff-gp-demo-selected',()=>{if(demo)demo.classList.remove('gpDemoTab');if(overlay)overlay.classList.remove('active');});
+ document.addEventListener('riff-gp-demo-selected',()=>{if(demo)demo.classList.remove('gpDemoTab');if(overlay)overlay.classList.remove('active','rendering');});
 })();
 </script>
 
