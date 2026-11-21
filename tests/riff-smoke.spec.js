@@ -133,3 +133,28 @@ test('manual video framing controls zoom and reposition the video', async ({ pag
   expect(await video.evaluate(el=>el.style.transform)).toContain('translate(0%, 0%) scale(1)');
   expect(pageErrors).toEqual([]);
 });
+
+test('imported tablature preview switches from demo to the selected GP visual', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.stack || error.message));
+  await page.goto('/');
+  await page.locator('#startRiff').click();
+  const manager = page.locator('.tabManager');
+  await expect(manager).toBeVisible();
+  const picker = page.locator('input[type="file"][accept*=".gp"]');
+  await picker.setInputFiles({ name: 'nueva-tablatura.gp', mimeType: 'application/octet-stream', buffer: Buffer.from('fixture-gp') });
+  await expect(page.locator('.tabItem.active .tabItemName')).toHaveText('nueva-tablatura.gp');
+  await expect(page.locator('.tabManagerStatus')).toContainText('Tablatura activa: nueva-tablatura.gp');
+  const overlay = page.locator('#riffActualTabPreview');
+  // Simulate AlphaTab completing its SVG render; verifies the visual switching layer itself.
+  await overlay.evaluate(el => { el.innerHTML = '<div class="at-page"><svg xmlns="http://www.w3.org/2000/svg" width="300" height="100"><text x="10" y="25">GP IMPORTADA</text></svg></div>'; });
+  await expect(overlay).toHaveClass(/active/);
+  await expect(page.locator('#tab')).toHaveClass(/gpDemoTab/);
+  await expect(overlay).toBeVisible();
+  await expect(page.locator('#tab')).toBeHidden();
+  // Selecting the demo restores the original demo tablature and hides the imported score.
+  await page.locator('.tabItem').first().click();
+  await expect(overlay).toBeHidden();
+  await expect(page.locator('#tab')).toBeVisible();
+  expect(pageErrors).toEqual([]);
+});
