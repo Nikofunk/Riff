@@ -291,7 +291,7 @@ function pitchLabel(midi){
  return pitchNames[((midi%12)+12)%12]+(Math.floor(midi/12)-1)+' · MIDI '+midi;
 }
 function render(){
- document.querySelectorAll('.note').forEach(n=>n.remove());timeline.innerHTML='';
+ document.querySelectorAll('.note').forEach(n=>n.remove());timeline.querySelectorAll('.event').forEach(n=>n.remove());
  const e=events[current];if(!e)return;
  const barEvents=events.filter(x=>x.barIndex===e.barIndex);
  const maxTick=Math.max(3840,...barEvents.map(x=>x.tick+x.duration));
@@ -501,7 +501,7 @@ render();
    // Keep a measurable container during AlphaTab initialization, even while the preview is transparent.
    overlay.classList.add('rendering');
    api=new window.alphaTab.AlphaTabApi(overlay,{display:{staveProfile:window.alphaTab.StaveProfile.Tab,scale:75},player:{enablePlayer:false,enableCursor:false,enableElementHighlighting:false}});
-   api.renderFinished?.on(()=>{overlay.classList.remove('rendering');overlay.classList.add('active');if(demo)demo.classList.add('gpDemoTab');renderPending=false;document.dispatchEvent(new CustomEvent('riff-gp-preview-rendered'));});
+   api.renderFinished?.on(()=>{renderPending=false;if(overlay.querySelector('svg')||overlay.querySelector('.at-page')){overlay.classList.remove('rendering');overlay.classList.add('active');if(demo)demo.classList.add('gpDemoTab');document.dispatchEvent(new CustomEvent('riff-gp-preview-rendered'));}else{overlay.classList.remove('active');}});
    api.error?.on(err=>{console.error('RIFF GP preview error',err);renderPending=false;overlay.classList.remove('active','rendering');if(demo)demo.classList.remove('gpDemoTab');document.dispatchEvent(new CustomEvent('riff-gp-preview-error',{detail:{message:err?.message||String(err)}}));});
   }catch(err){console.error('RIFF preview API init failed',err);api=null;}
   return api;
