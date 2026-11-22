@@ -2,7 +2,9 @@ const { test, expect } = require('@playwright/test');
 
 test('real Guitar Pro fixture imports and renders through the tab manager', async ({ page }) => {
   const pageErrors = [];
+  const browserErrors = [];
   page.on('pageerror', error => pageErrors.push(error.stack || error.message));
+  page.on('console', msg => { if (msg.type() === 'error') browserErrors.push(msg.text()); });
 
   await page.goto('/');
   await page.locator('#startRiff').click();
@@ -29,11 +31,22 @@ test('real Guitar Pro fixture imports and renders through the tab manager', asyn
 
   // Wait for AlphaTab's actual render callback—not a simulated event or injected SVG.
   const overlay = page.locator('#riffActualTabPreview');
+  try {
   await expect(overlay).toHaveClass(/active/, { timeout: 30000 });
   // Verify the renderer produced content; output tag can vary by AlphaTab renderer.\n  await expect(overlay).not.toBeEmpty({ timeout: 30000 });
   await expect(page.locator('.tabManagerStatus')).toContainText('Tablatura importada visible en el preview', { timeout: 30000 });
   await expect(page.locator('#tab')).toBeHidden();
   await expect(page.locator('#timeline .gpTabClip')).toContainText('riff-real-import-fixture.gpx');
 
-  expect(pageErrors).toEqual([]);
+  expect(pageErrors, 'Browser page errors: ' + JSON.stringify(pageErrors)).toEqual([]);
+  } catch (err) {
+    const diagnostics = {
+      managerStatus: await page.locator('.tabManagerStatus').textContent().catch(() => 'unavailable'),
+      overlayHTML: await overlay.evaluate(el => el.innerHTML.slice(0, 2000)).catch(() => 'unavailable'),
+      browserErrors,
+      pageErrors
+    };
+    await test.info().attach('alphaTab-import-diagnostics', { body: JSON.stringify(diagnostics, null, 2), contentType: 'application/json' });
+    throw new Error(`${err.message}\nDIAGNOSTICS: ${JSON.stringify(diagnostics, null, 2)}`);
+  }
 });
