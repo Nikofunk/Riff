@@ -502,13 +502,16 @@ render();
    overlay.classList.add('rendering');
    api=new window.alphaTab.AlphaTabApi(overlay,{display:{staveProfile:window.alphaTab.StaveProfile.Tab,scale:75},player:{enablePlayer:false,enableCursor:false,enableElementHighlighting:false}});
    api.renderFinished?.on(()=>{renderPending=false;if(overlay.querySelector('svg')||overlay.querySelector('.at-page')){overlay.classList.remove('rendering');overlay.classList.add('active');if(demo)demo.classList.add('gpDemoTab');document.dispatchEvent(new CustomEvent('riff-gp-preview-rendered'));}else{overlay.classList.remove('active');}});
+   api.scoreLoaded?.on(score=>{console.info('RIFF GP preview scoreLoaded',score?.title||'score');});
+   api.renderStarted?.on(()=>{renderPending=true;});
+   api.postRenderFinished?.on(()=>{renderPending=false;});
    api.error?.on(err=>{console.error('RIFF GP preview error',err);renderPending=false;overlay.classList.remove('active','rendering');if(demo)demo.classList.remove('gpDemoTab');document.dispatchEvent(new CustomEvent('riff-gp-preview-error',{detail:{message:err?.message||String(err)}}));});
   }catch(err){console.error('RIFF preview API init failed',err);api=null;}
   return api;
  }
  function load(bytes){
   const a=init();if(!a||!bytes)return;
-  try{overlay.innerHTML='';overlay.classList.remove('active');overlay.classList.add('rendering');renderPending=true;a.load(bytes);}
+  try{overlay.innerHTML='';overlay.classList.remove('active');overlay.classList.add('rendering');renderPending=true;const accepted=a.load(bytes);if(accepted===false){throw new Error('AlphaTab rechazó los datos del archivo');}a.render();}
   catch(err){console.error('RIFF preview GP load failed',err);renderPending=false;if(demo)demo.classList.remove('gpDemoTab');}
  }
  document.addEventListener('riff-gp-preview-load',ev=>{if(ev.detail&&ev.detail.bytes)load(ev.detail.bytes);});
