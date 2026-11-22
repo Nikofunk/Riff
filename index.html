@@ -601,7 +601,7 @@ render();
  manager.innerHTML='<h3>Tablaturas del proyecto</h3><p class="tabManagerHint">Agrega archivos Guitar Pro y selecciona cuál queda activa para reproducción y visualización.</p><div class="tabList"></div><button class="addTabButton" type="button">＋ Agregar tablatura</button><div class="tabManagerStatus">Demo cargada · puedes agregar archivos GP</div>';
  panel.insertBefore(manager,panel.firstChild);
  const list=manager.querySelector('.tabList'),status=manager.querySelector('.tabManagerStatus'),add=manager.querySelector('.addTabButton');
- const picker=document.createElement('input');picker.type='file';picker.accept='.gp,.gp3,.gp4,.gp5,.gpx,.gp7,.gp8,.guitarpro';picker.hidden=true;document.body.appendChild(picker);
+ const picker=document.createElement('input');picker.type='file';picker.id='gpTabFilePicker';picker.accept='.gp,.gp3,.gp4,.gp5,.gpx,.gp7,.gp8,.guitarpro';picker.hidden=true;document.body.appendChild(picker);
  let items=[{name:'Shape of You · Demo',kind:'demo'}],active=0,pendingIndex=null;
  function validName(name){const n=name.toLowerCase();return ['.gp','.gp3','.gp4','.gp5','.gpx','.gp7','.gp8','.guitarpro'].some(ext=>n.endsWith(ext));}
  function draw(){list.innerHTML='';items.forEach((item,i)=>{const b=document.createElement('button');b.type='button';b.className='tabItem'+(i===active?' active':'');b.innerHTML='<span class="tabItemIcon">♫</span><span class="tabItemName"></span><small></small>';b.querySelector('.tabItemName').textContent=item.name;b.querySelector('small').textContent=i===active?'ACTIVA':item.kind==='demo'?'DEMO':'GP';b.addEventListener('click',()=>selectItem(i));list.appendChild(b);});}
