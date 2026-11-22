@@ -143,12 +143,21 @@ test('imported tablature preview switches from demo to the selected GP visual', 
   await expect(manager).toBeVisible();
   await page.locator('.tabManager .addTabButton').click();
   const picker = page.locator('#gpTabFilePicker');
-  await picker.setInputFiles({ name: 'nueva-tablatura.gp', mimeType: 'application/octet-stream', buffer: Buffer.from('fixture-gp') });
+  const fixtureBase64 = await page.evaluate(() => {
+    const scripts = [...document.scripts].map(s => s.textContent || '').join('\n');
+    const match = scripts.match(/const sampleBase64\s*=\s*'([^']+)'/);
+    if (!match) throw new Error('Could not locate embedded Guitar Pro fixture');
+    return match[1];
+  });
+  const fixture = Buffer.from(fixtureBase64, 'base64');
+  await picker.setInputFiles({ name: 'nueva-tablatura.gpxx', mimeType: 'application/octet-stream', buffer: fixture });
   await expect(page.locator('.tabItem.active .tabItemName')).toHaveText('nueva-tablatura.gp');
   await expect(page.locator('.tabManagerStatus')).toContainText('Tablatura activa: nueva-tablatura.gp');
   const overlay = page.locator('#riffActualTabPreview');
-  // Simulate AlphaTab completing its SVG render; verifies the visual switching layer itself.
-  await overlay.evaluate(el => { el.innerHTML = '<div class="at-page"><svg xmlns="http://www.w3.org/2000/svg" width="300" height="100"><text x="10" y="25">GP IMPORTADA</text></svg></div>'; });
+  // Wait for the real AlphaTab render callback using a known-valid embedded fixture.
+  await expect(overlay).toHaveClass(/active/, { timeout: 30000 });
+  await expect(overlay).not.toBeEmpty({ timeout: 30000 });
+  await expect(page.locator('.tabManagerStatus')).toContainText('Tablatura importada visible en el preview', { timeout: 30000 });
   await expect(overlay).toHaveClass(/active/);
   await expect(page.locator('#tab')).toHaveClass(/gpDemoTab/);
   await expect(overlay).toBeVisible();
