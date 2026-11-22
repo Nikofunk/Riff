@@ -16,7 +16,8 @@ test('real Guitar Pro fixture imports and renders through the tab manager', asyn
   });
   const fixture = Buffer.from(fixtureBase64, 'base64');
 
-  const picker = page.locator('.tabManager input[type="file"][accept*=".gp"]');
+  await page.locator('.tabManager .addTabButton').click();
+  const picker = page.locator('#gpTabFilePicker');
   await picker.setInputFiles({
     name: 'riff-real-import-fixture.gpx',
     mimeType: 'application/octet-stream',
