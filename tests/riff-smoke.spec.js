@@ -150,9 +150,9 @@ test('imported tablature preview switches from demo to the selected GP visual', 
     return match[1];
   });
   const fixture = Buffer.from(fixtureBase64, 'base64');
-  await picker.setInputFiles({ name: 'nueva-tablatura.gpxx', mimeType: 'application/octet-stream', buffer: fixture });
-  await expect(page.locator('.tabItem.active .tabItemName')).toHaveText('nueva-tablatura.gp');
-  await expect(page.locator('.tabManagerStatus')).toContainText('Tablatura activa: nueva-tablatura.gp');
+  await picker.setInputFiles({ name: 'nueva-tablatura.gpx', mimeType: 'application/octet-stream', buffer: fixture });
+  await expect(page.locator('.tabItem.active .tabItemName')).toHaveText('nueva-tablatura.gpx');
+  await expect(page.locator('.tabManagerStatus')).toContainText('Tablatura activa: nueva-tablatura.gpx');
   const overlay = page.locator('#riffActualTabPreview');
   // Wait for the real AlphaTab render callback using a known-valid embedded fixture.
   await expect(overlay).toHaveClass(/active/, { timeout: 30000 });
