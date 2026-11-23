@@ -26,7 +26,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-chromium-v1
       - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Run browser tests
         run: npm test
       - name: Upload test report on failure
@@ -58,22 +58,22 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-chromium-v1
       - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
-      - name: Wait for Netlify deployment
+        run: npx playwright install chromium
+      - name: Wait for GitHub Pages deployment
         run: |
           for attempt in $(seq 1 24); do
-            if curl -fsS https://riffmusicians.netlify.app/ -o /tmp/riff-live.html && grep -q 'RIFF' /tmp/riff-live.html; then
-              echo "Netlify site responds with RIFF content."
+            if curl -fsS https://nikofunk.github.io/Riff/ -o /tmp/riff-live.html && grep -q 'RIFF' /tmp/riff-live.html; then
+              echo "GitHub Pages site responds with RIFF content."
               exit 0
             fi
-            echo "Waiting for Netlify deploy... attempt $attempt"
+            echo "Waiting for GitHub Pages deploy... attempt $attempt"
             sleep 10
           done
-          echo "Netlify site did not become ready in time."
+          echo "GitHub Pages site did not become ready in time."
           exit 1
       - name: Run browser tests against production
         env:
-          RIFF_URL: https://riffmusicians.netlify.app
+          RIFF_URL: https://nikofunk.github.io/Riff
         run: npm test
       - name: Upload live test report on failure
         if: failure()
