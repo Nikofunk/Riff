@@ -515,8 +515,9 @@ render();
   catch(err){console.error('RIFF preview GP load failed',err);renderPending=false;if(demo)demo.classList.remove('gpDemoTab');}
  }
  document.addEventListener('riff-gp-preview-load',ev=>{if(ev.detail&&ev.detail.bytes)load(ev.detail.bytes);});
- // Wait until the primary AlphaTab library has loaded; leave the demo visible until a real score renders.
- const wait=()=>{if(window.alphaTab)init();else setTimeout(wait,150);};wait();
+ // Initialize only after the preview is visible and has measurable dimensions.
+ // AlphaTab cannot autosize while RIFF is still on its hidden welcome screen.
+ const wait=()=>{const rect=preview.getBoundingClientRect();if(window.alphaTab&&rect.width>0&&rect.height>0&&preview.offsetParent!==null)init();else setTimeout(wait,150);};wait();
 })();
 </script>
 <style id="riff-video-fit-control">
