@@ -480,7 +480,8 @@ render();
  padding:7px 5px!important; background:rgba(12,13,15,.9)!important;
  border:1px solid rgba(210,220,225,.4)!important; border-radius:9px!important; backdrop-filter:blur(3px)!important;
 }
-#workspace .alphaTabOverlay.rendering{display:block!important;opacity:1!important;pointer-events:none!important;}\n#workspace .alphaTabOverlay.active{display:block!important;opacity:1!important;}
+#workspace .alphaTabOverlay.rendering{display:block!important;opacity:1!important;pointer-events:none!important;height:42%!important;min-height:140px!important;max-height:none!important;}
+#workspace .alphaTabOverlay.active{display:block!important;opacity:1!important;height:42%!important;min-height:140px!important;max-height:none!important;}
 #workspace .alphaTabOverlay svg{display:block!important;width:100%!important;height:auto!important;}
 #workspace .alphaTabOverlay .at-page{max-width:100%!important;margin:0 auto!important;}
 @media(max-width:760px){#workspace .verticalPreview{width:min(320px,100%,calc(65vh * 9 / 16))!important;}}
@@ -500,9 +501,10 @@ render();
   try{
    // Keep a measurable container during AlphaTab initialization, even while the preview is transparent.
    overlay.classList.add('rendering');
+   overlay.style.setProperty('height','42%','important');overlay.style.setProperty('min-height','140px','important');overlay.style.setProperty('display','block','important');
    api=new window.alphaTab.AlphaTabApi(overlay,{core:{engine:'svg',useWorkers:false},display:{staveProfile:window.alphaTab.StaveProfile.Tab,scale:75},player:{enablePlayer:false,enableCursor:false,enableElementHighlighting:false}});
    api.renderFinished?.on(()=>{renderPending=false;if(overlay.querySelector('svg')||overlay.querySelector('.at-page')){overlay.classList.remove('rendering');overlay.classList.add('active');if(demo)demo.classList.add('gpDemoTab');document.dispatchEvent(new CustomEvent('riff-gp-preview-rendered'));}else{overlay.classList.remove('active');}});
-   api.scoreLoaded?.on(score=>{console.info('RIFF GP preview scoreLoaded',score?.title||'score');setTimeout(()=>{try{api.render();}catch(err){console.error('RIFF GP preview render after scoreLoaded failed',err);}},0);});
+   api.scoreLoaded?.on(score=>{console.info('RIFF GP preview scoreLoaded',score?.title||'score');requestAnimationFrame(()=>{overlay.style.setProperty('height','42%','important');overlay.style.setProperty('display','block','important');try{api.render();}catch(err){console.error('RIFF GP preview render after scoreLoaded failed',err);}});});
    api.renderStarted?.on(()=>{renderPending=true;});
    api.postRenderFinished?.on(()=>{renderPending=false;});
    api.error?.on(err=>{console.error('RIFF GP preview error',err);renderPending=false;overlay.classList.remove('active','rendering');if(demo)demo.classList.remove('gpDemoTab');document.dispatchEvent(new CustomEvent('riff-gp-preview-error',{detail:{message:err?.message||String(err)}}));});
@@ -511,7 +513,7 @@ render();
  }
  function load(bytes){
   const a=init();if(!a||!bytes)return;
-  try{overlay.innerHTML='';overlay.classList.remove('active');overlay.classList.add('rendering');renderPending=true;const accepted=a.load(bytes);if(accepted===false){throw new Error('AlphaTab rechazó los datos del archivo');}}
+  try{overlay.innerHTML='';overlay.style.setProperty('height','42%','important');overlay.style.setProperty('min-height','140px','important');overlay.style.setProperty('display','block','important');overlay.classList.remove('active');overlay.classList.add('rendering');renderPending=true;const accepted=a.load(bytes);if(accepted===false){throw new Error('AlphaTab rechazó los datos del archivo');}}
   catch(err){console.error('RIFF preview GP load failed',err);renderPending=false;if(demo)demo.classList.remove('gpDemoTab');}
  }
  document.addEventListener('riff-gp-preview-load',ev=>{if(ev.detail&&ev.detail.bytes)load(ev.detail.bytes);});
