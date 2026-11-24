@@ -504,7 +504,7 @@ render();
    overlay.style.setProperty('height','42%','important');overlay.style.setProperty('min-height','140px','important');overlay.style.setProperty('display','block','important');
    api=new window.alphaTab.AlphaTabApi(overlay,{core:{engine:'svg',useWorkers:false},display:{staveProfile:window.alphaTab.StaveProfile.Tab,scale:75},player:{enablePlayer:false,enableCursor:false,enableElementHighlighting:false}});
    api.renderFinished?.on(()=>{renderPending=false;if(overlay.querySelector('svg')||overlay.querySelector('.at-page')){overlay.classList.remove('rendering');overlay.classList.add('active');if(demo)demo.classList.add('gpDemoTab');document.dispatchEvent(new CustomEvent('riff-gp-preview-rendered'));}else{overlay.classList.remove('active');}});
-   api.scoreLoaded?.on(score=>{console.info('RIFF GP preview scoreLoaded',score?.title||'score');requestAnimationFrame(()=>{overlay.style.setProperty('height','42%','important');overlay.style.setProperty('display','block','important');try{api.render();}catch(err){console.error('RIFF GP preview render after scoreLoaded failed',err);}});});
+   api.scoreLoaded?.on(score=>{console.info('RIFF GP preview scoreLoaded',score?.title||'score');overlay.style.setProperty('height','42%','important');overlay.style.setProperty('display','block','important');});
    api.renderStarted?.on(()=>{renderPending=true;});
    api.postRenderFinished?.on(()=>{renderPending=false;});
    api.error?.on(err=>{console.error('RIFF GP preview error',err);renderPending=false;overlay.classList.remove('active','rendering');if(demo)demo.classList.remove('gpDemoTab');document.dispatchEvent(new CustomEvent('riff-gp-preview-error',{detail:{message:err?.message||String(err)}}));});
