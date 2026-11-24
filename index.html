@@ -503,7 +503,7 @@ render();
    overlay.classList.add('rendering');
    overlay.style.setProperty('height','42%','important');overlay.style.setProperty('min-height','140px','important');overlay.style.setProperty('display','block','important');
    api=new window.alphaTab.AlphaTabApi(overlay,{core:{engine:'svg',useWorkers:false},display:{staveProfile:window.alphaTab.StaveProfile.Tab,scale:75},player:{enablePlayer:false,enableCursor:false,enableElementHighlighting:false}});
-   api.renderFinished?.on(()=>{renderPending=false;if(overlay.querySelector('svg')||overlay.querySelector('.at-page')){overlay.classList.remove('rendering');overlay.classList.add('active');if(demo)demo.classList.add('gpDemoTab');document.dispatchEvent(new CustomEvent('riff-gp-preview-rendered'));}else{overlay.classList.remove('active');}});
+   api.renderFinished?.on(()=>{renderPending=false;console.info('RIFF GP preview renderFinished',overlay.innerHTML.length);if(overlay.querySelector('svg')||overlay.querySelector('.at-page')){overlay.classList.remove('rendering');overlay.classList.add('active');if(demo)demo.classList.add('gpDemoTab');document.dispatchEvent(new CustomEvent('riff-gp-preview-rendered'));}else{console.warn('RIFF GP preview finished without SVG');overlay.classList.remove('active');}});
    api.scoreLoaded?.on(score=>{console.info('RIFF GP preview scoreLoaded',score?.title||'score');overlay.style.setProperty('height','42%','important');overlay.style.setProperty('display','block','important');});
    api.renderStarted?.on(()=>{renderPending=true;});
    api.postRenderFinished?.on(()=>{renderPending=false;});
@@ -513,7 +513,12 @@ render();
  }
  function load(bytes){
   const a=init();if(!a||!bytes)return;
-  try{overlay.innerHTML='';overlay.style.setProperty('height','42%','important');overlay.style.setProperty('min-height','140px','important');overlay.style.setProperty('display','block','important');overlay.classList.remove('active');overlay.classList.add('rendering');renderPending=true;const accepted=a.load(bytes);if(accepted===false){throw new Error('AlphaTab rechazó los datos del archivo');}}
+  try{overlay.innerHTML='';overlay.style.setProperty('height','42%','important');overlay.style.setProperty('min-height','140px','important');overlay.style.setProperty('display','block','important');overlay.classList.remove('active');overlay.classList.add('rendering');renderPending=true;
+   // The audio API parses the same imported file first. Give the visual API its own buffer
+   // so parser state or buffer ownership cannot leave the preview with consumed data.
+   const visualBytes=new Uint8Array(bytes.byteLength);visualBytes.set(bytes);
+   const accepted=a.load(visualBytes);if(accepted===false){throw new Error('AlphaTab rechazó los datos del archivo');}
+  }
   catch(err){console.error('RIFF preview GP load failed',err);renderPending=false;if(demo)demo.classList.remove('gpDemoTab');}
  }
  document.addEventListener('riff-gp-preview-load',ev=>{if(ev.detail&&ev.detail.bytes)load(ev.detail.bytes);});
