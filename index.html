@@ -488,53 +488,54 @@ render();
 </style>
 
 <script>
-// RIFF v46: renderizador visible independiente para GP importada, con fallback a demo.
+// RIFF v49: reutiliza el renderizado del motor AlphaTab principal y lo copia al canvas.
 (()=>{
  const preview=document.querySelector('#workspace .verticalPreview');
- if(!preview)return;
- const demo=preview.querySelector('#tab');
- let overlay=preview.querySelector('#riffActualTabPreview');
- if(!overlay){overlay=document.createElement('div');overlay.id='riffActualTabPreview';overlay.className='alphaTabOverlay';preview.appendChild(overlay);}
- let api=null,renderPending=false,pendingVisualBytes=null;
- function init(){
-  if(api||!window.alphaTab)return api;
-  try{
-   // Keep a measurable container during AlphaTab initialization, even while the preview is transparent.
-   overlay.classList.add('rendering');
-   overlay.style.setProperty('height','42%','important');overlay.style.setProperty('min-height','140px','important');overlay.style.setProperty('display','block','important');
-   api=new window.alphaTab.AlphaTabApi(overlay,{core:{engine:'svg',useWorkers:false},display:{staveProfile:window.alphaTab.StaveProfile.Tab,scale:75},player:{enablePlayer:false,enableCursor:false,enableElementHighlighting:false}});
-   api.renderFinished?.on(()=>{renderPending=false;console.info('RIFF GP preview renderFinished',overlay.innerHTML.length);if(overlay.querySelector('svg')||overlay.querySelector('.at-page')){overlay.classList.remove('rendering');overlay.classList.add('active');if(demo)demo.classList.add('gpDemoTab');document.dispatchEvent(new CustomEvent('riff-gp-preview-rendered'));}else{console.warn('RIFF GP preview finished without SVG');overlay.classList.remove('active');}});
-   api.scoreLoaded?.on(score=>{console.info('RIFF GP preview scoreLoaded',score?.title||'score');overlay.style.setProperty('height','42%','important');overlay.style.setProperty('display','block','important');});
-   api.renderStarted?.on(()=>{renderPending=true;});
-   api.postRenderFinished?.on(()=>{renderPending=false;});
-   api.error?.on(err=>{console.error('RIFF GP preview error',err);renderPending=false;overlay.classList.remove('active','rendering');if(demo)demo.classList.remove('gpDemoTab');document.dispatchEvent(new CustomEvent('riff-gp-preview-error',{detail:{message:err?.message||String(err)}}));});
-   // Drain an import that arrived before this visual API instance was ready.
-   if(pendingVisualBytes){const queued=pendingVisualBytes;pendingVisualBytes=null;load(queued);}
-  }catch(err){console.error('RIFF preview API init failed',err);api=null;}
-  return api;
+ const overlay=preview?.querySelector('#riffActualTabPreview');
+ const demo=preview?.querySelector('#tab');
+ if(!preview||!overlay)return;
+ let pending=false,attached=false;
+ function attach(){
+  if(attached||typeof alphaApi==='undefined'||!alphaApi)return;
+  attached=true;
+  alphaApi.renderFinished?.on(()=>{
+   if(!pending)return;
+   const source=document.querySelector('#alphaTabEngine');
+   if(!source)return;
+   const pages=source.querySelectorAll('.at-page');
+   const svgs=source.querySelectorAll('svg');
+   if(!pages.length&&!svgs.length){
+    console.warn('RIFF: AlphaTab terminó sin nodos SVG en el motor principal',source.innerHTML.slice(0,500));
+    return;
+   }
+   overlay.innerHTML='';
+   const nodes=pages.length?pages:svgs;
+   nodes.forEach(node=>overlay.appendChild(node.cloneNode(true)));
+   overlay.classList.remove('rendering');
+   overlay.classList.add('active');
+   if(demo)demo.classList.add('gpDemoTab');
+   pending=false;
+   const status=document.querySelector('.tabManagerStatus');
+   if(status)status.textContent='Tablatura importada visible en el preview.';
+   document.dispatchEvent(new CustomEvent('riff-gp-preview-rendered'));
+  });
  }
- function load(bytes){
-  if(!bytes)return;
-  const a=init();
-  if(!a){
-   // Preserve the newest selected file instead of silently dropping its preview request.
-   pendingVisualBytes=new Uint8Array(bytes.byteLength);pendingVisualBytes.set(bytes);
-   overlay.classList.add('rendering');
-   overlay.style.setProperty('height','42%','important');overlay.style.setProperty('min-height','140px','important');overlay.style.setProperty('display','block','important');
-   console.info('RIFF GP preview queued until AlphaTab is ready',pendingVisualBytes.byteLength);
-   return;
-  }
-  try{overlay.innerHTML='';overlay.style.setProperty('height','42%','important');overlay.style.setProperty('min-height','140px','important');overlay.style.setProperty('display','block','important');overlay.classList.remove('active');overlay.classList.add('rendering');renderPending=true;
-   // Give the visual renderer its own buffer, independent of the audio API.
-   const visualBytes=new Uint8Array(bytes.byteLength);visualBytes.set(bytes);
-   const accepted=a.load(visualBytes);if(accepted===false){throw new Error('AlphaTab rechazó los datos del archivo');}
-  }
-  catch(err){console.error('RIFF preview GP load failed',err);renderPending=false;overlay.classList.remove('rendering');if(demo)demo.classList.remove('gpDemoTab');document.dispatchEvent(new CustomEvent('riff-gp-preview-error',{detail:{message:err?.message||String(err)}}));}
- }
- document.addEventListener('riff-gp-preview-load',ev=>{if(ev.detail&&ev.detail.bytes)load(ev.detail.bytes);});
- // Initialize only after the preview is visible and has measurable dimensions.
- // AlphaTab cannot autosize while RIFF is still on its hidden welcome screen.
- const wait=()=>{const rect=preview.getBoundingClientRect();if(window.alphaTab&&rect.width>0&&rect.height>0&&preview.offsetParent!==null)init();else setTimeout(wait,150);};wait();
+ document.addEventListener('riff-alpha-ready',attach);
+ document.addEventListener('riff-gp-preview-load',ev=>{
+  if(!ev.detail?.bytes)return;
+  attach();pending=true;
+  overlay.innerHTML='';
+  overlay.classList.remove('active');
+  overlay.classList.add('rendering');
+  if(demo)demo.classList.add('gpDemoTab');
+  const status=document.querySelector('.tabManagerStatus');
+  if(status)status.textContent='Renderizando tablatura importada…';
+ });
+ document.addEventListener('riff-gp-demo-selected',()=>{
+  pending=false;overlay.innerHTML='';overlay.classList.remove('active','rendering');
+  if(demo)demo.classList.remove('gpDemoTab');
+ });
+ attach();
 })();
 </script>
 <style id="riff-video-fit-control">
@@ -636,9 +637,10 @@ render();
    // AlphaTab may transfer/detach the supplied ArrayBuffer while loading. Create both copies BEFORE either API receives one.
    const audioBytes=new Uint8Array(bytes.byteLength);audioBytes.set(bytes);
    const visualBytes=new Uint8Array(bytes.byteLength);visualBytes.set(bytes);
+   if(!isDemo)document.dispatchEvent(new CustomEvent('riff-gp-preview-load',{detail:{bytes:visualBytes,name}}));
    alphaApi.load(audioBytes);
    if(isDemo){document.dispatchEvent(new CustomEvent('riff-gp-demo-selected'));removeClip();label('');status.textContent='Demo activa.';}
-   else{document.dispatchEvent(new CustomEvent('riff-gp-preview-load',{detail:{bytes:visualBytes,name}}));label(name);status.textContent='Tablatura activa: '+name+' · renderizando preview…';const timeline=document.querySelector('#timeline');if(timeline){let clip=timeline.querySelector('.gpTabClip');if(!clip){clip=document.createElement('div');clip.className='videoClip gpTabClip';timeline.appendChild(clip);}clip.textContent='♫ '+name;}}
+   else{label(name);status.textContent='Tablatura activa: '+name+' · renderizando preview…';const timeline=document.querySelector('#timeline');if(timeline){let clip=timeline.querySelector('.gpTabClip');if(!clip){clip=document.createElement('div');clip.className='videoClip gpTabClip';timeline.appendChild(clip);}clip.textContent='♫ '+name;}}
   }catch(err){status.textContent='No se pudo cargar '+name+': '+(err.message||err);console.error('RIFF import',err);}
  }
  async function selectItem(i){if(i<0||i>=items.length)return;active=i;draw();const item=items[i];if(item.kind==='demo'){loadBytes(decodeDemo(),item.name,true);return;}
