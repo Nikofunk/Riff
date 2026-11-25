@@ -488,57 +488,79 @@ render();
 </style>
 
 <script>
-// RIFF v49: reutiliza el renderizado del motor AlphaTab principal y lo copia al canvas.
+// RIFF v50: espera la finalización real del render AlphaTab y replica el SVG actualizado.
 (()=>{
  const preview=document.querySelector('#workspace .verticalPreview');
  let overlay=preview?.querySelector('#riffActualTabPreview');
  const demo=preview?.querySelector('#tab');
- if(!preview)return;
+ const source=document.querySelector('#alphaTabEngine');
+ if(!preview||!source)return;
  if(!overlay){overlay=document.createElement('div');overlay.id='riffActualTabPreview';overlay.className='alphaTabOverlay';preview.appendChild(overlay);}
- let pending=false,attached=false;
+ let pending=false,baseline='',observer=null,settleTimer=null;
+ function publish(){
+  if(!pending)return false;
+  const pages=source.querySelectorAll('.at-page');
+  const svgs=source.querySelectorAll('svg');
+  if(!pages.length&&!svgs.length)return false;
+  const current=source.innerHTML;
+  if(current===baseline)return false;
+  overlay.innerHTML='';
+  (pages.length?pages:svgs).forEach(node=>overlay.appendChild(node.cloneNode(true)));
+  if(!overlay.querySelector('svg'))return false;
+  overlay.classList.remove('rendering');
+  overlay.classList.add('active');
+  if(demo)demo.classList.add('gpDemoTab');
+  pending=false;
+  if(observer){observer.disconnect();observer=null;}
+  if(settleTimer){clearTimeout(settleTimer);settleTimer=null;}
+  const status=document.querySelector('.tabManagerStatus');
+  if(status)status.textContent='Tablatura importada visible en el preview.';
+  document.dispatchEvent(new CustomEvent('riff-gp-preview-rendered'));
+  return true;
+ }
+ function afterRender(){
+  if(!pending)return;
+  requestAnimationFrame(()=>{if(!publish())requestAnimationFrame(publish);});
+ }
  function attach(){
-  if(attached||typeof alphaApi==='undefined'||!alphaApi)return;
-  attached=true;
-  alphaApi.renderFinished?.on(()=>{
-   if(!pending)return;
-   const source=document.querySelector('#alphaTabEngine');
-   if(!source)return;
-   const pages=source.querySelectorAll('.at-page');
-   const svgs=source.querySelectorAll('svg');
-   if(!pages.length&&!svgs.length){
-    console.warn('RIFF: AlphaTab terminó sin nodos SVG en el motor principal',source.innerHTML.slice(0,500));
-    return;
-   }
-   overlay.innerHTML='';
-   const nodes=pages.length?pages:svgs;
-   nodes.forEach(node=>overlay.appendChild(node.cloneNode(true)));
-   overlay.classList.remove('rendering');
-   overlay.classList.add('active');
-   if(demo)demo.classList.add('gpDemoTab');
-   pending=false;
-   const status=document.querySelector('.tabManagerStatus');
-   if(status)status.textContent='Tablatura importada visible en el preview.';
-   document.dispatchEvent(new CustomEvent('riff-gp-preview-rendered'));
-  });
+  if(typeof alphaApi==='undefined'||!alphaApi)return;
+  alphaApi.renderFinished?.on(afterRender);
+  alphaApi.postRenderFinished?.on(afterRender);
+  alphaApi.scoreLoaded?.on(afterRender);
  }
  document.addEventListener('riff-alpha-ready',attach);
  document.addEventListener('riff-gp-preview-load',ev=>{
   if(!ev.detail?.bytes)return;
-  attach();pending=true;
+  baseline=source.innerHTML;
+  pending=true;
   overlay.innerHTML='';
   overlay.classList.remove('active');
   overlay.classList.add('rendering');
   if(demo)demo.classList.add('gpDemoTab');
   const status=document.querySelector('.tabManagerStatus');
   if(status)status.textContent='Renderizando tablatura importada…';
+  if(observer)observer.disconnect();
+  observer=new MutationObserver(afterRender);
+  observer.observe(source,{childList:true,subtree:true,attributes:true});
+  if(settleTimer)clearTimeout(settleTimer);
+  settleTimer=setTimeout(()=>{
+   if(!publish()){
+    pending=false;
+    overlay.classList.remove('rendering');
+    const message='AlphaTab no generó un SVG nuevo para la tablatura importada.';
+    if(status)status.textContent=message;
+    document.dispatchEvent(new CustomEvent('riff-gp-preview-error',{detail:{message}}));
+   }
+  },12000);
  });
  document.addEventListener('riff-gp-demo-selected',()=>{
   pending=false;overlay.innerHTML='';overlay.classList.remove('active','rendering');
+  if(observer){observer.disconnect();observer=null;}
+  if(settleTimer){clearTimeout(settleTimer);settleTimer=null;}
   if(demo)demo.classList.remove('gpDemoTab');
  });
  attach();
 })();
-</script>
 <style id="riff-video-fit-control">
 #workspace .videoFrameControls .videoFitLabel{display:flex;align-items:center;gap:5px;color:#9aa8b0;font-size:10px;white-space:nowrap;}
 #workspace .videoFrameControls .videoFitSelect{background:#0b0e12;color:#e7edf0;border:1px solid #343c44;border-radius:5px;padding:5px 7px;font-size:10px;}
