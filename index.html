@@ -632,8 +632,13 @@ render();
  function label(name){const el=document.querySelector('#selectedFile');if(el)el.textContent=name?'Tablatura activa: '+name:'Proyecto de demostración';}
  function removeClip(){document.querySelector('#timeline .gpTabClip')?.remove();}
  function loadBytes(bytes,name,isDemo){if(!alphaApi){pendingIndex=active;status.textContent='Archivo listo. Esperando a que AlphaTab termine de inicializarse…';return;}
-  try{alphaApi.load(bytes);if(isDemo){document.dispatchEvent(new CustomEvent('riff-gp-demo-selected'));removeClip();label('');status.textContent='Demo activa.';}
-  else{document.dispatchEvent(new CustomEvent('riff-gp-preview-load',{detail:{bytes,name}}));label(name);status.textContent='Tablatura activa: '+name+' · renderizando preview…';const timeline=document.querySelector('#timeline');if(timeline){let clip=timeline.querySelector('.gpTabClip');if(!clip){clip=document.createElement('div');clip.className='videoClip gpTabClip';timeline.appendChild(clip);}clip.textContent='♫ '+name;}}
+  try{
+   // AlphaTab may transfer/detach the supplied ArrayBuffer while loading. Create both copies BEFORE either API receives one.
+   const audioBytes=new Uint8Array(bytes.byteLength);audioBytes.set(bytes);
+   const visualBytes=new Uint8Array(bytes.byteLength);visualBytes.set(bytes);
+   alphaApi.load(audioBytes);
+   if(isDemo){document.dispatchEvent(new CustomEvent('riff-gp-demo-selected'));removeClip();label('');status.textContent='Demo activa.';}
+   else{document.dispatchEvent(new CustomEvent('riff-gp-preview-load',{detail:{bytes:visualBytes,name}}));label(name);status.textContent='Tablatura activa: '+name+' · renderizando preview…';const timeline=document.querySelector('#timeline');if(timeline){let clip=timeline.querySelector('.gpTabClip');if(!clip){clip=document.createElement('div');clip.className='videoClip gpTabClip';timeline.appendChild(clip);}clip.textContent='♫ '+name;}}
   }catch(err){status.textContent='No se pudo cargar '+name+': '+(err.message||err);console.error('RIFF import',err);}
  }
  async function selectItem(i){if(i<0||i>=items.length)return;active=i;draw();const item=items[i];if(item.kind==='demo'){loadBytes(decodeDemo(),item.name,true);return;}
