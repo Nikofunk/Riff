@@ -491,9 +491,10 @@ render();
 // RIFF v49: reutiliza el renderizado del motor AlphaTab principal y lo copia al canvas.
 (()=>{
  const preview=document.querySelector('#workspace .verticalPreview');
- const overlay=preview?.querySelector('#riffActualTabPreview');
+ let overlay=preview?.querySelector('#riffActualTabPreview');
  const demo=preview?.querySelector('#tab');
- if(!preview||!overlay)return;
+ if(!preview)return;
+ if(!overlay){overlay=document.createElement('div');overlay.id='riffActualTabPreview';overlay.className='alphaTabOverlay';preview.appendChild(overlay);}
  let pending=false,attached=false;
  function attach(){
   if(attached||typeof alphaApi==='undefined'||!alphaApi)return;
