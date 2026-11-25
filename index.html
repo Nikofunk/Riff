@@ -495,7 +495,7 @@ render();
  const demo=preview.querySelector('#tab');
  let overlay=preview.querySelector('#riffActualTabPreview');
  if(!overlay){overlay=document.createElement('div');overlay.id='riffActualTabPreview';overlay.className='alphaTabOverlay';preview.appendChild(overlay);}
- let api=null,renderPending=false;
+ let api=null,renderPending=false,pendingVisualBytes=null;
  function init(){
   if(api||!window.alphaTab)return api;
   try{
@@ -508,21 +508,28 @@ render();
    api.renderStarted?.on(()=>{renderPending=true;});
    api.postRenderFinished?.on(()=>{renderPending=false;});
    api.error?.on(err=>{console.error('RIFF GP preview error',err);renderPending=false;overlay.classList.remove('active','rendering');if(demo)demo.classList.remove('gpDemoTab');document.dispatchEvent(new CustomEvent('riff-gp-preview-error',{detail:{message:err?.message||String(err)}}));});
+   // Drain an import that arrived before this visual API instance was ready.
+   if(pendingVisualBytes){const queued=pendingVisualBytes;pendingVisualBytes=null;load(queued);}
   }catch(err){console.error('RIFF preview API init failed',err);api=null;}
   return api;
  }
  function load(bytes){
-  const a=init();if(!a||!bytes)return;
+  if(!bytes)return;
+  const a=init();
+  if(!a){
+   // Preserve the newest selected file instead of silently dropping its preview request.
+   pendingVisualBytes=new Uint8Array(bytes.byteLength);pendingVisualBytes.set(bytes);
+   overlay.classList.add('rendering');
+   overlay.style.setProperty('height','42%','important');overlay.style.setProperty('min-height','140px','important');overlay.style.setProperty('display','block','important');
+   console.info('RIFF GP preview queued until AlphaTab is ready',pendingVisualBytes.byteLength);
+   return;
+  }
   try{overlay.innerHTML='';overlay.style.setProperty('height','42%','important');overlay.style.setProperty('min-height','140px','important');overlay.style.setProperty('display','block','important');overlay.classList.remove('active');overlay.classList.add('rendering');renderPending=true;
-   // The audio API parses the same imported file first. Give the visual API its own buffer
-   // so parser state or buffer ownership cannot leave the preview with consumed data.
+   // Give the visual renderer its own buffer, independent of the audio API.
    const visualBytes=new Uint8Array(bytes.byteLength);visualBytes.set(bytes);
    const accepted=a.load(visualBytes);if(accepted===false){throw new Error('AlphaTab rechazó los datos del archivo');}
-   // AlphaTab may accept the score without completing the visible render on its own.
-   // Explicitly request a render after load so the preview lifecycle can finish.
-   a.render();
   }
-  catch(err){console.error('RIFF preview GP load failed',err);renderPending=false;if(demo)demo.classList.remove('gpDemoTab');}
+  catch(err){console.error('RIFF preview GP load failed',err);renderPending=false;overlay.classList.remove('rendering');if(demo)demo.classList.remove('gpDemoTab');document.dispatchEvent(new CustomEvent('riff-gp-preview-error',{detail:{message:err?.message||String(err)}}));}
  }
  document.addEventListener('riff-gp-preview-load',ev=>{if(ev.detail&&ev.detail.bytes)load(ev.detail.bytes);});
  // Initialize only after the preview is visible and has measurable dimensions.
