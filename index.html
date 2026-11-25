@@ -518,6 +518,9 @@ render();
    // so parser state or buffer ownership cannot leave the preview with consumed data.
    const visualBytes=new Uint8Array(bytes.byteLength);visualBytes.set(bytes);
    const accepted=a.load(visualBytes);if(accepted===false){throw new Error('AlphaTab rechazó los datos del archivo');}
+   // AlphaTab may accept the score without completing the visible render on its own.
+   // Explicitly request a render after load so the preview lifecycle can finish.
+   a.render();
   }
   catch(err){console.error('RIFF preview GP load failed',err);renderPending=false;if(demo)demo.classList.remove('gpDemoTab');}
  }
