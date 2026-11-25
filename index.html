@@ -488,34 +488,54 @@ render();
 </style>
 
 <script>
-// RIFF v51: motor visual AlphaTab independiente para la tablatura importada.
+// RIFF v52: espera scoreLoaded y renderFinished del motor visual antes de activar el visor.
 (()=>{
  const preview=document.querySelector('#workspace .verticalPreview');
  if(!preview)return;
  const demo=preview.querySelector('#tab');
  let overlay=preview.querySelector('#riffActualTabPreview');
  if(!overlay){overlay=document.createElement('div');overlay.id='riffActualTabPreview';overlay.className='alphaTabOverlay';preview.appendChild(overlay);}
- let visualApi=null,queuedBytes=null,initializing=false;
+ let visualApi=null,queuedBytes=null,initializing=false,scoreReady=false,renderStarted=false,renderTimer=null,observer=null;
  function status(message){const el=document.querySelector('.tabManagerStatus');if(el)el.textContent=message;}
- function showError(err){
-  overlay.classList.remove('rendering','active');
+ function clearWait(){if(renderTimer){clearTimeout(renderTimer);renderTimer=null;}if(observer){observer.disconnect();observer=null;}}
+ function fail(err){
+  clearWait();overlay.classList.remove('rendering','active');
   if(demo)demo.classList.remove('gpDemoTab');
   const message=err?.message||String(err||'Error de AlphaTab');
   status('No se pudo renderizar la tablatura: '+message);
   document.dispatchEvent(new CustomEvent('riff-gp-preview-error',{detail:{message}}));
   console.error('RIFF visual AlphaTab:',err);
  }
+ function publish(){
+  if(!scoreReady)return false;
+  const svg=overlay.querySelector('svg');
+  if(!svg)return false;
+  clearWait();
+  overlay.classList.remove('rendering');
+  overlay.classList.add('active');
+  if(demo)demo.classList.add('gpDemoTab');
+  status('Tablatura importada visible en el preview.');
+  document.dispatchEvent(new CustomEvent('riff-gp-preview-rendered'));
+  return true;
+ }
+ function schedulePublish(){requestAnimationFrame(()=>{if(!publish())requestAnimationFrame(publish);});}
  function render(bytes){
-  if(!visualApi){queuedBytes=new Uint8Array(bytes);queuedBytes=new Uint8Array(queuedBytes);return;}
+  if(!visualApi){queuedBytes=new Uint8Array(bytes);return;}
   try{
    const copy=new Uint8Array(bytes.byteLength);copy.set(bytes);
+   scoreReady=false;renderStarted=false;
    overlay.innerHTML='';
    overlay.classList.remove('active');
    overlay.classList.add('rendering');
    if(demo)demo.classList.add('gpDemoTab');
+   if(observer)observer.disconnect();
+   observer=new MutationObserver(schedulePublish);
+   observer.observe(overlay,{childList:true,subtree:true});
+   if(renderTimer)clearTimeout(renderTimer);
+   renderTimer=setTimeout(()=>fail(new Error('AlphaTab no generó la notación SVG de este archivo.')),15000);
    const accepted=visualApi.load(copy);
    if(accepted===false)throw new Error('AlphaTab rechazó el archivo Guitar Pro.');
-  }catch(err){showError(err);}
+  }catch(err){fail(err);}
  }
  function init(){
   if(visualApi||initializing||!window.alphaTab)return;
@@ -531,20 +551,14 @@ render();
     display:{staveProfile:window.alphaTab.StaveProfile.Tab,scale:75},
     player:{enablePlayer:false,enableCursor:false,enableElementHighlighting:false}
    });
-   visualApi.renderFinished?.on(()=>{
-    requestAnimationFrame(()=>{
-     if(!overlay.querySelector('svg,.at-page')){showError(new Error('AlphaTab terminó sin generar la notación SVG.'));return;}
-     overlay.classList.remove('rendering');
-     overlay.classList.add('active');
-     if(demo)demo.classList.add('gpDemoTab');
-     status('Tablatura importada visible en el preview.');
-     document.dispatchEvent(new CustomEvent('riff-gp-preview-rendered'));
-    });
-   });
-   visualApi.error?.on(showError);
+   visualApi.scoreLoaded?.on(()=>{scoreReady=true;schedulePublish();});
+   visualApi.renderFinished?.on(schedulePublish);
+   visualApi.postRenderFinished?.on(schedulePublish);
+   visualApi.renderStarted?.on(()=>{renderStarted=true;});
+   visualApi.error?.on(fail);
    initializing=false;
    if(queuedBytes){const bytes=queuedBytes;queuedBytes=null;render(bytes);}
-  }catch(err){initializing=false;visualApi=null;showError(err);}
+  }catch(err){initializing=false;visualApi=null;fail(err);}
  }
  document.addEventListener('riff-gp-preview-load',ev=>{
   if(!ev.detail?.bytes)return;
@@ -559,7 +573,7 @@ render();
   if(visualApi&&queuedBytes){const next=queuedBytes;queuedBytes=null;render(next);}
  });
  document.addEventListener('riff-gp-demo-selected',()=>{
-  queuedBytes=null;
+  queuedBytes=null;clearWait();
   overlay.innerHTML='';
   overlay.classList.remove('active','rendering');
   if(demo)demo.classList.remove('gpDemoTab');
