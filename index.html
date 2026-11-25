@@ -533,8 +533,10 @@ render();
    observer.observe(overlay,{childList:true,subtree:true});
    if(renderTimer)clearTimeout(renderTimer);
    renderTimer=setTimeout(()=>fail(new Error('AlphaTab no generó la notación SVG de este archivo.')),15000);
-   const accepted=visualApi.load(copy);
-   if(accepted===false)throw new Error('AlphaTab rechazó el archivo Guitar Pro.');
+   const settings=new window.alphaTab.Settings();
+   const score=window.alphaTab.importer.ScoreLoader.loadScoreFromBytes(copy,settings);
+   if(!score)throw new Error('AlphaTab no pudo interpretar los bytes del archivo Guitar Pro.');
+   visualApi.renderScore(score);
   }catch(err){fail(err);}
  }
  function init(){
