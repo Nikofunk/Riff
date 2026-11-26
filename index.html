@@ -281,7 +281,7 @@ let tuning=MODEL.tracks[0].staves[0].stringTuning.tunings;
 const demoEvents=events.slice(),demoBarOffset=globalBarOffset,demoTuning=tuning;
 document.addEventListener('riff-gp-demo-selected',()=>{
  if(importFallbackTimer)clearTimeout(importFallbackTimer);
- riffImportedScorePending=false;events=demoEvents.slice();globalBarOffset=demoBarOffset;tuning=demoTuning;current=0;
+ riffImportedScorePending=false;delete document.documentElement.dataset.riffImportedScore;events=demoEvents.slice();globalBarOffset=demoBarOffset;tuning=demoTuning;current=0;
  document.getElementById('songTitle').textContent=MODEL.title||'Untitled';
  document.getElementById('songArtist').textContent=(MODEL.artist||'')+' · '+MODEL.tracks[0].name;
  document.getElementById('barCount').textContent=MODEL.summary.bars;
@@ -409,7 +409,7 @@ function useImportedAlphaTabScore(score){
    offset+=barLength;
   });
   if(!nextEvents.length)throw new Error('El archivo no contiene notas de tablatura visibles.');
-  events=nextEvents;globalBarOffset=offset;current=0;
+  events=nextEvents;globalBarOffset=offset;current=0;document.documentElement.dataset.riffImportedScore='true';
   const tunings=staff.stringTuning?.tunings;
   if(Array.isArray(tunings)&&tunings.length)tuning=tunings;
   document.getElementById('songTitle').textContent=score.title||'Tablatura importada';
@@ -569,7 +569,7 @@ render();
   clearWait();overlay.classList.remove('rendering','active');
   if(demo)demo.classList.remove('gpDemoTab');
   const message=err?.message||String(err||'Error de AlphaTab');
-  status('No se pudo renderizar la tablatura: '+message);
+  if(document.documentElement.dataset.riffImportedScore!=='true')status('No se pudo renderizar la tablatura: '+message);
   document.dispatchEvent(new CustomEvent('riff-gp-preview-error',{detail:{message}}));
   console.error('RIFF visual AlphaTab:',err);
  }
