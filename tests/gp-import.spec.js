@@ -29,13 +29,11 @@ test('real Guitar Pro fixture imports and renders through the tab manager', asyn
   await expect(page.locator('.tabItem.active .tabItemName')).toHaveText('riff-real-import-fixture.gpx');
   await expect(page.locator('#selectedFile')).toContainText('riff-real-import-fixture.gpx');
 
-  // Wait for AlphaTab's actual render callback—not a simulated event or injected SVG.
-  const overlay = page.locator('#riffActualTabPreview');
-  try {
-  await expect(overlay).toHaveClass(/active/, { timeout: 30000 });
-  // Verify the renderer produced content; output tag can vary by AlphaTab renderer.\n  await expect(overlay).not.toBeEmpty({ timeout: 30000 });
-  await expect(page.locator('.tabManagerStatus')).toContainText('Tablatura importada visible en el preview', { timeout: 30000 });
-  await expect(page.locator('#tab')).toBeHidden();
+  // The vertical HTML renderer must be driven by the imported AlphaTab score model.
+  await expect(page.locator('#tab')).toBeVisible();
+  await expect(page.locator('#tab .note').first()).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('html')).toHaveAttribute('data-riff-imported-score', 'true', { timeout: 30000 });
+  await expect(page.locator('.tabManagerStatus')).toContainText('Tablatura importada:', { timeout: 30000 });
   await expect(page.locator('#timeline .gpTabClip')).toContainText('riff-real-import-fixture.gpx');
 
   expect(pageErrors, 'Browser page errors: ' + JSON.stringify(pageErrors)).toEqual([]);
