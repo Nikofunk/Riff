@@ -281,7 +281,7 @@ let tuning=MODEL.tracks[0].staves[0].stringTuning.tunings;
 const demoEvents=events.slice(),demoBarOffset=globalBarOffset,demoTuning=tuning;
 document.addEventListener('riff-gp-demo-selected',()=>{
  if(importFallbackTimer)clearTimeout(importFallbackTimer);
- riffImportedScorePending=false;delete document.documentElement.dataset.riffImportedScore;events=demoEvents.slice();globalBarOffset=demoBarOffset;tuning=demoTuning;current=0;
+ riffImportedScorePending=false;delete document.documentElement.dataset.riffImportedScore;document.getElementById('tab')?.classList.remove('gpDemoTab');events=demoEvents.slice();globalBarOffset=demoBarOffset;tuning=demoTuning;current=0;
  document.getElementById('songTitle').textContent=MODEL.title||'Untitled';
  document.getElementById('songArtist').textContent=(MODEL.artist||'')+' · '+MODEL.tracks[0].name;
  document.getElementById('barCount').textContent=MODEL.summary.bars;
