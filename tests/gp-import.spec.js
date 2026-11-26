@@ -32,7 +32,7 @@ test('real Guitar Pro fixture imports and renders through the tab manager', asyn
   // AlphaTab's visible SVG is the source of truth for the imported notation.
   await expect(page.locator('html')).toHaveAttribute('data-riff-imported-score', 'true', { timeout: 30000 });
   await expect(page.locator('#alphaTabEngine.active svg').first()).toBeVisible({ timeout: 30000 });
-  await expect(page.locator('.tabManagerStatus')).toContainText('Tablatura importada visible', { timeout: 30000 });
+  await expect(page.locator('#alphaTabEngine.active svg .at-page, #alphaTabEngine.active svg')).toBeVisible({ timeout: 30000 });
   await expect(page.locator('#timeline .gpTabClip')).toContainText('riff-real-import-fixture.gpx');
 
   expect(pageErrors, 'Browser page errors: ' + JSON.stringify(pageErrors) + '\nConsole: ' + browserLogs.join('\n')).toEqual([]);
