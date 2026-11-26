@@ -153,18 +153,13 @@ test('imported tablature preview switches from demo to the selected GP visual', 
   await picker.setInputFiles({ name: 'nueva-tablatura.gpx', mimeType: 'application/octet-stream', buffer: fixture });
   await expect(page.locator('.tabItem.active .tabItemName')).toHaveText('nueva-tablatura.gpx');
   await expect(page.locator('.tabManagerStatus')).toContainText('Tablatura activa: nueva-tablatura.gpx');
-  const overlay = page.locator('#riffActualTabPreview');
-  // Wait for the real AlphaTab render callback using a known-valid embedded fixture.
-  await expect(overlay).toHaveClass(/active/, { timeout: 30000 });
-  await expect(overlay).not.toBeEmpty({ timeout: 30000 });
-  await expect(page.locator('.tabManagerStatus')).toContainText('Tablatura importada visible en el preview', { timeout: 30000 });
-  await expect(overlay).toHaveClass(/active/);
-  await expect(page.locator('#tab')).toHaveClass(/gpDemoTab/);
-  await expect(overlay).toBeVisible();
-  await expect(page.locator('#tab')).toBeHidden();
-  // Selecting the demo restores the original demo tablature and hides the imported score.
+  await expect(page.locator('html')).toHaveAttribute('data-riff-imported-score', 'true', { timeout: 30000 });
+  await expect(page.locator('#tab')).toBeVisible();
+  await expect(page.locator('#tab .note').first()).toBeVisible();
+  await expect(page.locator('.tabManagerStatus')).toContainText('Tablatura importada:', { timeout: 30000 });
+  // Selecting the demo restores the original demo tablature.
   await page.locator('.tabItem').first().click();
-  await expect(overlay).toBeHidden();
+  await expect(page.locator('html')).not.toHaveAttribute('data-riff-imported-score');
   await expect(page.locator('#tab')).toBeVisible();
   expect(pageErrors).toEqual([]);
 });
