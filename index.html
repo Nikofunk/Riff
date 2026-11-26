@@ -426,7 +426,8 @@ function useImportedAlphaTabScore(score){
 }
 function initAlphaTab(){try{alphaLib=window.alphaTab;alphaApi=new alphaLib.AlphaTabApi(document.getElementById('alphaTabEngine'),{core:{engine:'svg',useWorkers:false},display:{staveProfile:alphaLib.StaveProfile.Tab},player:{enablePlayer:true,soundFont:'https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.6.0/dist/soundfont/sonivox.sf2',enableCursor:false,enableElementHighlighting:false}});
 alphaApi.error?.on(e=>setStatus('Error AlphaTab: '+(e.message||e),'error'));
-alphaApi.scoreLoaded?.on(score=>{console.info('RIFF AlphaTab scoreLoaded event',!!score,score?.tracks?.length);if(riffImportedScorePending){riffImportedScorePending=false;if(importFallbackTimer)clearTimeout(importFallbackTimer);useImportedAlphaTabScore(score);}});
+alphaApi.scoreLoaded?.on(score=>{console.info('RIFF AlphaTab scoreLoaded event',!!score,score?.tracks?.length);if(riffImportedScorePending){riffImportedScorePending=false;if(importFallbackTimer)clearTimeout(importFallbackTimer);document.documentElement.dataset.riffImportedScore='true';document.getElementById('tab')?.classList.add('gpDemoTab');const st=document.querySelector('.tabManagerStatus');if(st)st.textContent='Partitura cargada; dibujando notación…';}});
+alphaApi.renderFinished?.on(()=>{if(document.documentElement.dataset.riffImportedScore==='true'){const engine=document.getElementById('alphaTabEngine');if(engine?.querySelector('svg')){engine.classList.add('active');const st=document.querySelector('.tabManagerStatus');if(st)st.textContent='Tablatura importada visible en el preview.';document.dispatchEvent(new CustomEvent('riff-gp-preview-rendered'));}}});
 alphaApi.soundFontLoad?.on(e=>{if(e.total)setStatus('Cargando instrumento… '+Math.round(e.loaded/e.total*100)+'%');});
 alphaApi.soundFontLoaded?.on(()=>setStatus('SoundFont cargado. Preparando MIDI…'));
 alphaApi.playerReady?.on(()=>{playBtn.disabled=false;playBtn.textContent='▶ Reproducir audio';setStatus('Audio listo. Reproducción MIDI real disponible.','ready');});
@@ -556,100 +557,30 @@ render();
 </style>
 
 <script>
-// RIFF v52: espera scoreLoaded y renderFinished del motor visual antes de activar el visor.
+// RIFF v53: la notación visible usa el mismo AlphaTabApi que reproduce el audio.
 (()=>{
  const preview=document.querySelector('#workspace .verticalPreview');
- if(!preview)return;
- const demo=preview.querySelector('#tab');
- let overlay=preview.querySelector('#riffActualTabPreview');
- if(!overlay){overlay=document.createElement('div');overlay.id='riffActualTabPreview';overlay.className='alphaTabOverlay';preview.appendChild(overlay);}
- let visualApi=null,queuedBytes=null,initializing=false,scoreReady=false,renderStarted=false,renderTimer=null,observer=null;
- function status(message){const el=document.querySelector('.tabManagerStatus');if(el)el.textContent=message;}
- function clearWait(){if(renderTimer){clearTimeout(renderTimer);renderTimer=null;}if(observer){observer.disconnect();observer=null;}}
- function fail(err){
-  clearWait();overlay.classList.remove('rendering','active');
-  if(demo)demo.classList.remove('gpDemoTab');
-  const message=err?.message||String(err||'Error de AlphaTab');
-  if(document.documentElement.dataset.riffImportedScore!=='true')status('No se pudo renderizar la tablatura: '+message);
-  document.dispatchEvent(new CustomEvent('riff-gp-preview-error',{detail:{message}}));
-  console.error('RIFF visual AlphaTab:',err);
- }
- function publish(){
-  if(!scoreReady)return false;
-  const svg=overlay.querySelector('svg');
-  if(!svg)return false;
-  clearWait();
-  overlay.classList.remove('rendering');
-  overlay.classList.add('active');
-  if(demo)demo.classList.add('gpDemoTab');
-  status('Tablatura importada visible en el preview.');
-  document.dispatchEvent(new CustomEvent('riff-gp-preview-rendered'));
-  return true;
- }
- function schedulePublish(){requestAnimationFrame(()=>{if(!publish())requestAnimationFrame(publish);});}
- function render(bytes){
-  if(!visualApi){queuedBytes=new Uint8Array(bytes);return;}
-  try{
-   const copy=new Uint8Array(bytes.byteLength);copy.set(bytes);
-   scoreReady=false;renderStarted=false;
-   overlay.innerHTML='';
-   overlay.classList.remove('active');
-   overlay.classList.add('rendering');
-   if(demo)demo.classList.add('gpDemoTab');
-   if(observer)observer.disconnect();
-   observer=new MutationObserver(schedulePublish);
-   observer.observe(overlay,{childList:true,subtree:true});
-   if(renderTimer)clearTimeout(renderTimer);
-   renderTimer=setTimeout(()=>fail(new Error('AlphaTab no generó la notación SVG de este archivo.')),15000);
-   const accepted=visualApi.load(copy);
-   if(accepted===false)throw new Error('AlphaTab rechazó el archivo Guitar Pro.');
-   console.info('RIFF visual AlphaTab: load iniciado', {accepted,bytes:copy.byteLength,containerWidth:overlay.clientWidth,containerHeight:overlay.clientHeight});
-  }catch(err){fail(err);}
- }
- function init(){
-  if(visualApi||initializing||!window.alphaTab)return;
-  const rect=preview.getBoundingClientRect();
-  if(rect.width<=0||rect.height<=0||preview.offsetParent===null)return;
-  initializing=true;
-  try{
-   overlay.style.setProperty('height','42%','important');
-   overlay.style.setProperty('min-height','140px','important');
-   overlay.style.setProperty('display','block','important');
-   visualApi=new window.alphaTab.AlphaTabApi(overlay,{
-    core:{engine:'svg',useWorkers:false},
-    display:{staveProfile:window.alphaTab.StaveProfile.Tab,scale:75},
-    player:{enablePlayer:false,enableCursor:false,enableElementHighlighting:false}
-   });
-   visualApi.scoreLoaded?.on(()=>{scoreReady=true;schedulePublish();});
-   visualApi.renderFinished?.on(schedulePublish);
-   visualApi.postRenderFinished?.on(schedulePublish);
-   visualApi.renderStarted?.on(()=>{renderStarted=true;});
-   visualApi.error?.on(fail);
-   initializing=false;
-   if(queuedBytes){const bytes=queuedBytes;queuedBytes=null;render(bytes);}
-  }catch(err){initializing=false;visualApi=null;fail(err);}
- }
- document.addEventListener('riff-gp-preview-load',ev=>{
-  if(!ev.detail?.bytes)return;
-  const bytes=new Uint8Array(ev.detail.bytes.byteLength);bytes.set(ev.detail.bytes);
-  queuedBytes=bytes;
-  overlay.innerHTML='';
-  overlay.classList.remove('active');
-  overlay.classList.add('rendering');
-  if(demo)demo.classList.add('gpDemoTab');
-  status('Renderizando tablatura importada…');
-  init();
-  if(visualApi&&queuedBytes){const next=queuedBytes;queuedBytes=null;render(next);}
+ const engine=document.getElementById('alphaTabEngine');
+ const demo=preview?.querySelector('#tab');
+ if(!preview||!engine)return;
+ preview.appendChild(engine);
+ engine.setAttribute('aria-hidden','false');
+ engine.classList.add('riffAlphaTabCanvas');
+ document.addEventListener('riff-gp-preview-load',()=>{
+  engine.classList.add('active');
+  demo?.classList.add('gpDemoTab');
+  const status=document.querySelector('.tabManagerStatus');
+  if(status)status.textContent='Cargando tablatura en el visor…';
+  // Recalculate AlphaTab layout after the engine has moved into the visible 9:16 canvas.
+  requestAnimationFrame(()=>{try{alphaApi?.render();}catch(e){console.error('RIFF AlphaTab resize render',e);}});
  });
  document.addEventListener('riff-gp-demo-selected',()=>{
-  queuedBytes=null;clearWait();
-  overlay.innerHTML='';
-  overlay.classList.remove('active','rendering');
-  if(demo)demo.classList.remove('gpDemoTab');
+  engine.classList.remove('active');
+  demo?.classList.remove('gpDemoTab');
+  delete document.documentElement.dataset.riffImportedScore;
  });
- const wait=()=>{init();if(!visualApi)requestAnimationFrame(()=>setTimeout(wait,150));};
- wait();
-})();</script>
+})();
+</script>
 <style id="riff-video-fit-control">
 #workspace .videoFrameControls .videoFitLabel{display:flex;align-items:center;gap:5px;color:#9aa8b0;font-size:10px;white-space:nowrap;}
 #workspace .videoFrameControls .videoFitSelect{background:#0b0e12;color:#e7edf0;border:1px solid #343c44;border-radius:5px;padding:5px 7px;font-size:10px;}
@@ -904,39 +835,8 @@ render();
 #workspace .alphaTabOverlay .at-page{max-width:100%!important;margin:0 auto!important;}
 </style>
 <script>
-// RIFF v47: explicitly switch preview from demo to imported GP and detect completed SVG render.
-(()=>{
- const preview=document.querySelector('#workspace .verticalPreview');
- if(!preview)return;
- const demo=preview.querySelector('#tab');
- const overlay=preview.querySelector('#riffActualTabPreview');
- const managerStatus=document.querySelector('#workspace .tabManagerStatus');
- const showImported=()=>{
-   if(overlay && (overlay.querySelector('svg') || overlay.querySelector('.at-page'))){
-     overlay.classList.add('active');
-     if(demo)demo.classList.add('gpDemoTab');
-     if(managerStatus)managerStatus.textContent='Tablatura importada visible en el preview.';
-     return true;
-   }
-   return false;
- };
- if(overlay){
-   const obs=new MutationObserver(()=>showImported());
-   obs.observe(overlay,{childList:true,subtree:true});
- }
- document.addEventListener('riff-gp-preview-load',ev=>{
-   if(!ev.detail||!ev.detail.bytes)return;
-   // Hide demo as soon as user-selected score is active, not only after event timing.
-   if(demo)demo.classList.add('gpDemoTab');
-   if(overlay){overlay.innerHTML='';overlay.classList.remove('active');}
-   if(managerStatus)managerStatus.textContent='Renderizando tablatura importada…';
-   let tries=0;
-   const poll=()=>{if(showImported()||tries++>80){if(!showImported()){overlay?.classList.remove('rendering');if(managerStatus)managerStatus.textContent='El archivo se cargó para audio, pero AlphaTab no generó tablatura visual. Revisa el formato del archivo.';document.dispatchEvent(new CustomEvent('riff-gp-preview-error',{detail:{message:'No se generó la tablatura visual.'}}));}return;}setTimeout(poll,150);};
-   setTimeout(poll,150);
- });
- // Re-select demo returns the original visual demo and hides imported overlay.
- document.addEventListener('riff-gp-demo-selected',()=>{if(demo)demo.classList.remove('gpDemoTab');if(overlay)overlay.classList.remove('active','rendering');});
-})();
+// RIFF v53: se elimina el observador duplicado del visor SVG.
+(()=>{})();
 </script>
 
 <style id="riff-verified-fit-toggle">
@@ -976,4 +876,11 @@ render();
 <style id="riff-v48-overlay-render-state">
 #workspace .alphaTabOverlay.rendering{display:block!important;opacity:1!important;pointer-events:none!important;}
 #workspace .alphaTabOverlay.active{display:block!important;opacity:1!important;}
+</style>
+
+<style id="riff-v53-single-alphatab-engine">
+#workspace .verticalPreview #alphaTabEngine{display:none!important;position:absolute!important;left:8px!important;right:8px!important;bottom:8px!important;top:auto!important;width:auto!important;height:45%!important;max-height:45%!important;min-height:110px!important;opacity:1!important;pointer-events:auto!important;overflow:auto!important;z-index:10!important;background:rgba(8,9,11,.92)!important;border:1px solid rgba(210,220,225,.4)!important;border-radius:9px!important;padding:6px!important;}
+#workspace .verticalPreview #alphaTabEngine.active{display:block!important;}
+#workspace .verticalPreview #alphaTabEngine svg{display:block!important;width:100%!important;height:auto!important;}
+#workspace .verticalPreview #alphaTabEngine .at-page{max-width:100%!important;margin:0 auto!important;}
 </style>
