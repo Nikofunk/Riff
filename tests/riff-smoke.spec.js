@@ -4,7 +4,7 @@ test('RIFF loads and shows the welcome screen', async ({ page }) => {
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.stack || error.message));
 
-  const response = await page.goto('/');
+  const response = await page.goto('./');
   expect(response && response.ok()).toBeTruthy();
   await expect(page.locator('#riffHome')).toBeVisible();
   await expect(page.locator('#startRiff')).toBeVisible();
@@ -14,7 +14,7 @@ test('RIFF loads and shows the welcome screen', async ({ page }) => {
 });
 
 test('INICIAR opens the RIFF workspace', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./');
   await page.locator('#startRiff').click();
   await expect(page.locator('#riffHome')).toBeHidden();
   await expect(page.locator('#workspace')).toBeVisible();
@@ -22,7 +22,7 @@ test('INICIAR opens the RIFF workspace', async ({ page }) => {
 });
 
 test('main editor controls are present and usable', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./');
   await page.locator('#startRiff').click();
   await expect(page.locator('#play')).toBeVisible();
   await expect(page.locator('#prev')).toBeVisible();
@@ -34,7 +34,7 @@ test('main editor controls are present and usable', async ({ page }) => {
 test('video occupies the complete vertical preview canvas', async ({ page }) => {
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.stack || error.message));
-  await page.goto('/');
+  await page.goto('./');
   await page.locator('#startRiff').click();
   const zone = page.locator('.videoDropZone');
   const preview = page.locator('.verticalPreview');
@@ -54,7 +54,7 @@ test('video occupies the complete vertical preview canvas', async ({ page }) => 
 test('timeline is moved outside the main editor layout without DOM errors', async ({ page }) => {
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.stack || error.message));
-  await page.goto('/');
+  await page.goto('./');
   await page.locator('#startRiff').click();
   const timeline = page.locator('#timeline');
   await expect(timeline).toBeVisible();
@@ -67,7 +67,7 @@ test('timeline is moved outside the main editor layout without DOM errors', asyn
 test('video upload populates preview, media bin and timeline', async ({ page }) => {
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.stack || error.message));
-  await page.goto('/');
+  await page.goto('./');
   await page.locator('#startRiff').click();
   const picker = page.locator('#videoFilePicker');
   await picker.setInputFiles({
@@ -89,7 +89,7 @@ test('video upload populates preview, media bin and timeline', async ({ page }) 
 test('drag and drop imports a video and replacing it updates the existing media and timeline clip', async ({ page }) => {
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.stack || error.message));
-  await page.goto('/');
+  await page.goto('./');
   await page.locator('#startRiff').click();
   const zone = page.locator('.videoDropZone');
   await zone.evaluate(el => {
@@ -113,7 +113,7 @@ test('drag and drop imports a video and replacing it updates the existing media 
 test('manual video framing controls zoom and reposition the video', async ({ page }) => {
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.stack || error.message));
-  await page.goto('/');
+  await page.goto('./');
   await page.locator('#startRiff').click();
   const picker = page.locator('#videoFilePicker');
   await picker.setInputFiles({name:'framing-test.mp4',mimeType:'video/mp4',buffer:Buffer.from('fixture-video')});
@@ -137,7 +137,7 @@ test('manual video framing controls zoom and reposition the video', async ({ pag
 test('imported tablature preview switches from demo to the selected GP visual', async ({ page }) => {
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.stack || error.message));
-  await page.goto('/');
+  await page.goto('./');
   await page.locator('#startRiff').click();
   const manager = page.locator('.tabManager');
   await expect(manager).toBeVisible();
