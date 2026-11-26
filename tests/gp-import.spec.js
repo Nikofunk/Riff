@@ -37,14 +37,4 @@ test('real Guitar Pro fixture imports and renders through the tab manager', asyn
   await expect(page.locator('#timeline .gpTabClip')).toContainText('riff-real-import-fixture.gpx');
 
   expect(pageErrors, 'Browser page errors: ' + JSON.stringify(pageErrors)).toEqual([]);
-  } catch (err) {
-    const diagnostics = {
-      managerStatus: await page.locator('.tabManagerStatus').textContent().catch(() => 'unavailable'),
-      overlayHTML: await overlay.evaluate(el => el.innerHTML.slice(0, 2000)).catch(() => 'unavailable'),
-      browserErrors,
-      pageErrors
-    };
-    await test.info().attach('alphaTab-import-diagnostics', { body: JSON.stringify(diagnostics, null, 2), contentType: 'application/json' });
-    throw new Error(`${err.message}\nDIAGNOSTICS: ${JSON.stringify(diagnostics, null, 2)}`);
-  }
 });
