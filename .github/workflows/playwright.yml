@@ -73,7 +73,7 @@ jobs:
           exit 1
       - name: Run browser tests against production
         env:
-          RIFF_URL: https://nikofunk.github.io/Riff
+          RIFF_URL: https://nikofunk.github.io/Riff/
         run: npm test
       - name: Upload live test report on failure
         if: failure()
