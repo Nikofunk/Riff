@@ -154,12 +154,12 @@ test('imported tablature preview switches from demo to the selected GP visual', 
   await expect(page.locator('.tabItem.active .tabItemName')).toHaveText('nueva-tablatura.gpx');
   await expect(page.locator('.tabManagerStatus')).toContainText('Tablatura activa: nueva-tablatura.gpx');
   await expect(page.locator('html')).toHaveAttribute('data-riff-imported-score', 'true', { timeout: 30000 });
-  await expect(page.locator('#tab')).toBeVisible();
-  await expect(page.locator('#tab .note').first()).toBeVisible();
-  await expect(page.locator('.tabManagerStatus')).toContainText('Tablatura importada:', { timeout: 30000 });
+  await expect(page.locator('#alphaTabEngine.active svg').first()).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.tabManagerStatus')).toContainText('Tablatura importada visible', { timeout: 30000 });
   // Selecting the demo restores the original demo tablature.
   await page.locator('.tabItem').first().click();
   await expect(page.locator('html')).not.toHaveAttribute('data-riff-imported-score');
   await expect(page.locator('#tab')).toBeVisible();
+  await expect(page.locator('#alphaTabEngine')).not.toHaveClass(/active/);
   expect(pageErrors).toEqual([]);
 });
