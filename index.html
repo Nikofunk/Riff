@@ -409,7 +409,7 @@ function useImportedAlphaTabScore(score){
    offset+=barLength;
   });
   if(!nextEvents.length)throw new Error('El archivo no contiene notas de tablatura visibles.');
-  events=nextEvents;globalBarOffset=offset;current=0;document.documentElement.dataset.riffImportedScore='true';
+  events=nextEvents;globalBarOffset=offset;current=0;document.documentElement.dataset.riffImportedScore='true';document.getElementById('tab')?.classList.remove('gpDemoTab');
   const tunings=staff.stringTuning?.tunings;
   if(Array.isArray(tunings)&&tunings.length)tuning=tunings;
   document.getElementById('songTitle').textContent=score.title||'Tablatura importada';
