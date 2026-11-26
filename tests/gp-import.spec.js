@@ -6,7 +6,7 @@ test('real Guitar Pro fixture imports and renders through the tab manager', asyn
   page.on('pageerror', error => pageErrors.push(error.stack || error.message));
   page.on('console', msg => browserLogs.push(msg.type()+': '+msg.text()));
 
-  await page.goto('/');
+  await page.goto('./');
   await page.locator('#startRiff').click();
 
   // Reuse RIFF's embedded, known-valid Guitar Pro demo bytes as a real file fixture.
