@@ -6,7 +6,7 @@ module.exports = defineConfig({
   workers: 1,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: process.env.RIFF_URL || 'http://127.0.0.1:4173',
+    baseURL: process.env.RIFF_URL || 'http://127.0.0.1:4173/',
     headless: true,
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
